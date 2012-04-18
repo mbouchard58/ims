@@ -1,0 +1,174 @@
+<?php
+
+/**
+ * @file
+ * A module that allows you to map a DSpace feed as biblio nodes.
+ */
+
+/**
+ * Implements hook_help().
+ *
+ * Displays help and module information.
+ *
+ * @param path
+ *   Which path of the site we're using to display help
+ * @param arg
+ *   Array that holds the current path as returned from arg() function
+ */
+function dspace_biblio_help($path, $arg) {
+  switch ($path) {
+    case "admin/help#dspace_biblio":
+      return '<p>' . t("Import DSpace items into Drupal as Biblio nodes. Requires the the <a href='https://wiki.duraspace.org/display/DSPACE/REST+API'>DSpace REST API plugin</a>") . '</p>';
+      break;
+  }
+}
+
+/**
+ * Implements hook_feeds_processor_targets_alter().
+ *
+ * Alter mapping targets for entities.
+ *
+ * @param &$targets
+ *   Array containing the targets to be offered to the user. Add to this array
+ *   to expose additional options. Remove from this array to suppress options.
+ *   Remove with caution.
+ * @param $entity_type
+ *   The entity type of the target, for instance a 'node' entity.
+ * @param $bundle_name
+ *   The bundle name for which to alter targets.
+ */
+function dspace_biblio_feeds_processor_targets_alter(&$targets, $entity_type, $bundle_name) {
+  if ($entity_type == 'node' && $bundle_name == 'biblio') {
+    // Declare some biblio fields.
+    $targets['biblio_abst_e'] = array(
+      'name' => 'Biblio: Abstract',
+      'callback' => 'dspace_biblio_set_target',
+      'description' => t('Biblio abstract.'),
+    );
+    $targets['biblio_type'] = array(
+      'name' => 'Biblio: Type',
+      'callback' => 'dspace_biblio_set_target',
+      'description' => t('The numeric type of bibliographic resource, e.g. 100.'),
+    );
+    $targets['biblio_type_name'] = array(
+      'name' => 'Biblio: Type Name',
+      'callback' => 'dspace_biblio_set_target',
+      'description' => t('The type of bibliographic resource, e.g. Book.'),
+    );
+    $targets['biblio_contributors'] = array(
+      'name' => 'Biblio: Contributor(s)',
+      'callback' => 'dspace_biblio_set_target',
+      'description' => t('Contributor(s) of publication.'),
+    );
+    $targets['biblio_keywords'] = array(
+      'name' => 'Biblio: Keywords',
+      'callback' => 'dspace_biblio_set_target',
+      'description' => t('Keyword(s) of publication.'),
+    );
+    $targets['biblio_date'] = array(
+      'name' => 'Biblio: Date',
+      'callback' => 'dspace_biblio_set_target',
+      'description' => t('Date of publication.'),
+    );
+    $targets['biblio_year'] = array(
+      'name' => 'Biblio: Year',
+      'callback' => 'dspace_biblio_set_target',
+      'description' => t('Year of publication.'),
+    );
+    $targets['biblio_citekey'] = array(
+      'name' => 'Biblio: Citekey',
+      'callback' => 'dspace_biblio_set_target',
+    );
+    $targets['biblio_url'] = array(
+      'name' => 'Biblio: URL',
+      'callback' => 'dspace_biblio_set_target',
+    );
+    $targets['biblio_number'] = array(
+      'name' => 'Biblio: Number',
+      'callback' => 'dspace_biblio_set_target',
+    );
+  }
+}
+
+/**
+ * Callback specified in dspace_biblio_feeds_processor_targets_alter().
+ *
+ * @param $source
+ *   Field mapper source settings.
+ * @param $entity
+ *   An entity object, for instance a node object.
+ * @param $target
+ *   A string identifying the target on the node.
+ * @param $value
+ *   The value to populate the target with.
+ *
+ */
+function dspace_biblio_set_target($source, $entity, $target, $value) {
+
+  switch ($target) {
+    case 'biblio_abst_e':
+      $entity->biblio_abst_e = trim($value);
+      break;
+    case 'biblio_type_of_work':
+      $entity->biblio_type_of_work = trim($value);
+      break;
+    case 'biblio_contributors':
+      $contributors = $value;
+      foreach ($contributors as $key => $contributor) {
+        $entity->biblio_contributors[$key] = array(
+          'name' => trim($contributor),
+          'auth_type' => 1,
+          'auth_category' => 1,
+        );
+      }
+      break;
+    case 'biblio_keywords':
+      $keywords = $value;
+      foreach ($keywords as $key => $keyword) {
+        $entity->biblio_keywords[$key] = trim($keyword);
+      }
+      break;
+    case 'biblio_date':
+      date_default_timezone_set('UTC');
+      $entity->biblio_date = date('m/Y', strtotime(trim($value)));
+      break;
+    case 'biblio_year':
+      date_default_timezone_set('UTC');
+      $entity->biblio_year = date('Y', strtotime(trim($value)));
+      break;
+    case 'biblio_citekey':
+      $entity->biblio_citekey = trim($value);
+      break;
+    case 'biblio_url':
+      $entity->biblio_url = trim($value);
+      break;
+    case 'biblio_number':
+      $entity->biblio_number = trim($value);
+      break;
+    case 'biblio_type':
+      // Publication type defaults to "Miscellaneous".
+      $type_id = 129;
+
+      if (!empty($value)) {
+        // Grab the publication type ID from the database.
+        $type_id = db_query('SELECT tid FROM {biblio_types} as t WHERE t.name = :name', array(':name' => trim($value)))->fetchField();
+
+        // If type ID doesn't exists, create it.
+        if (empty($type_id)) {
+          $values['name'] = trim($value);
+          $values['description'] = '';
+          $values['tid'] = variable_get('biblio_max_user_tid', '999') + 1;
+          $type_id = $values['tid'];
+
+          db_insert('biblio_types')
+              ->fields($values)
+              ->execute();
+
+          variable_set('biblio_max_user_tid', $values['tid']);
+        }
+
+        $entity->biblio_type = (int) $type_id;
+      }
+      break;
+  }
+}

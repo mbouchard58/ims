@@ -259,7 +259,7 @@ function panels_mini_delete($mini) {
     ->condition('name', $mini->name)
     ->execute();
 
-  if ($mini->type != t('Overridden')) {
+  if (db_table_exists('block') && $mini->type != t('Overridden')) {
     // Also remove from block table as long as there isn't a default that may appear.
     db_delete('block')
       ->condition('delta', $mini->name)

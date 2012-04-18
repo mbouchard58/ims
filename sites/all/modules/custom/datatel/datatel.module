@@ -1,0 +1,44 @@
+<?php
+
+/**
+ * @file
+ * A module that allows you to map a Datatel feed as node items.
+ */
+
+/**
+ * Implements hook_help().
+ *
+ * Displays help and module information.
+ *
+ * @param path
+ *   Which path of the site we're using to display help
+ * @param arg
+ *   Array that holds the current path as returned from arg() function
+ */
+function datatel_help($path, $arg) {
+  switch ($path) {
+    case "admin/help#datatel":
+      return '<p>' . t("Import a Datatel file into Drupal as the content type of your choice. You'll need the location of a valid Datatel xml file.") . '</p>';
+      break;
+  }
+}
+
+/**
+ * Implements hook_feeds_plugins().
+ */
+function datatel_feeds_plugins() {
+  $info = array();
+
+  $info['FeedsDatatelParser'] = array(
+    'name' => 'Datatel Feeds parser',
+    'description' => 'Parses a Datatel XML file.',
+    'handler' => array(
+      'parent' => 'FeedsParser',
+      'class' => 'FeedsDatatelParser',
+      'file' => 'plugins/FeedsDatatelParser.inc',
+      'path' => drupal_get_path('module', 'datatel'),
+    ),
+  );
+
+  return $info;
+}

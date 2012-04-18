@@ -593,7 +593,8 @@ function panels_flexible_render_splitter($renderer, $left_id, $right_id) {
     $right_class = $left_class;
   }
 
-  $output = '<div class="panels-flexible-splitter flexible-splitter-for-' . $left_class . '">';
+  $output = '<div tabindex="0"
+    class="panels-flexible-splitter flexible-splitter-for-' . $left_class . '">';
 
   // Name the left object
   $output .= '<span class="panels-flexible-splitter-left">';

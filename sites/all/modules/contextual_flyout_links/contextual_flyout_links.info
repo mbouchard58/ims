@@ -1,0 +1,12 @@
+name = Contextual Flyout Links
+description = Changes the Drupal core contextual links into a stylized flyout menu.
+core = 7.x
+files[] = contextual_flyout_links.module
+dependencies[] = contextual
+
+; Information added by drupal.org packaging script on 2012-02-10
+version = "7.x-1.2"
+core = "7.x"
+project = "contextual_flyout_links"
+datestamp = "1328914837"
+

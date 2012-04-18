@@ -1,0 +1,13 @@
+name = DSpace
+description = This module will import your DSpace REST API collection using the Feeds Module.
+core = 7.x
+package = DSpace
+
+dependencies[] = feeds
+
+; Information added by drupal.org packaging script on 2012-02-24
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "dspace"
+datestamp = "1330042387"
+
