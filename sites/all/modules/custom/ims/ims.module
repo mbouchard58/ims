@@ -1,0 +1,25 @@
+<?php
+/**
+* Custom code for GSLIS IMS app
+*/
+
+/**
+* @file
+* change front page based on whether user is anonymous or authenticated
+*/
+
+function ims_menu() {
+   $items['front'] = array(
+        'page callback' => 'ims_front',
+    'access callback' => TRUE,
+   );
+   return $items;
+ }
+
+// The homepage. Serves node 93 to anon and node 94 to authenticated
+function ims_front() {
+        global $user;
+        $nid = $user->uid == 0 ? 93 : 94;
+        $node = node_load($nid);
+  return node_view($node);
+}

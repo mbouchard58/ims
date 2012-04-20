@@ -1,0 +1,4 @@
+name = Public
+description = This module allows content in the 'public' path to be viewable by the anonymous user
+core = 7.x
+package = Public

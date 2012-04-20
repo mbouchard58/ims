@@ -1,0 +1,25 @@
+<?php
+
+/*
+ * @file
+ *   Grant access to a node if its path alias starts with public/
+ */
+
+function public_menu_alter(&$items) {
+  // A copy of node/%node menu item except that access callback has changed.
+  $items['node/%node']['access callback'] = 'public_menu_node_access';
+  $items['node/%node']['access arguments'] = array(1);
+  return $items;
+}
+
+function public_menu_node_access($node) {
+  if ($alias = drupal_get_path_alias('node/' . $node->nid)) {
+    if (arg(0, $alias) == 'public') {
+      return TRUE;
+    }
+    else {
+      // It isn't a public node. do usual check.
+      return node_access('view', $node);
+    }
+  }
+}

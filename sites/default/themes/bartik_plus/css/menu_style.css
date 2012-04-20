@@ -1,0 +1,80 @@
+/* --------------- Main Menu Bartik Plus additions ------------ */
+
+#main-menu .menu li {
+  position: relative;
+}
+#main-menu ul.menu {
+  margin: 0;
+}
+
+
+#main-menu .menu ul {
+  border: solid 1px #ddd;
+  padding: 0;
+  position: absolute;
+  top: 2.4em;
+  left: 0;
+  z-index: 1000;
+  display: none;
+}
+/* Hack to keep menus from dropping behind the sidebars */
+#header {
+  z-index: 1;
+  position: relative;
+}
+#main-menu .menu ul li {
+  margin: 0;
+  padding: 0;
+  /* Tweak for IE */
+  clear: both;
+}
+/* Default background color for menu items */
+#main-menu .menu ul li,
+#main-menu .menu ul li a {
+  background: #EEF;
+}
+/* indicate menu has children with right arrow bg image */
+#main-menu .menu ul li.expanded a {
+  background: transparent url('../images/icn-arrow-right-light.png') no-repeat 96.5% 50%;
+}
+/* make sure children of expanded menus don't inherit indicator */
+#main-menu .menu li.expanded li.leaf a {
+  background: none;
+}
+/* hover state for all submenu links */
+#main-menu .menu ul li a:hover,
+#main-menu .menu ul li a:visited:hover {
+  background: #B3B3B3 url('../images/bg-shade-medium.png') repeat-x 0 100%!important;
+  color: #fff!important;
+}
+/* Second level links */
+#main-menu .menu ul li a,
+#main-menu .menu ul li a:visited,
+#main-menu .menu li.active-trail ul li a,
+#main-menu .menu .sfHover ul li a {
+  border-bottom: solid 1px #eee;
+  color: #555;
+  display: block;
+  font-size: 0.9em;
+  font-weight: normal;
+  width: 15em;
+  text-decoration: none;
+  -khtml-border-radius-topleft: 0;
+  -khtml-border-radius-topright: 0;
+  -moz-border-radius-topleft: 0;
+  -moz-border-radius-topright: 0;
+  -webkit-border-top-left-radius: 0;
+  -webkit-border-top-right-radius: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+/* active submenu link */
+#main-menu .menu li.active-trail ul li a.active {
+  color: #000;
+}
+#main-menu .menu ul ul {
+  z-index: 1001;
+  margin: 0;
+  left: 14.5em;
+  top: 0;
+}

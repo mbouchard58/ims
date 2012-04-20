@@ -1,0 +1,4 @@
+name = IMS
+description = This module contains custom code to support the Internship Management Application
+core = 7.x
+package = IMS
