@@ -7,9 +7,9 @@ dependencies[] = biblio
 dependencies[] = dspace
 
 
-; Information added by drupal.org packaging script on 2012-02-24
+; Information added by drupal.org packaging script on 2012-04-04
 version = "7.x-1.x-dev"
 core = "7.x"
 project = "dspace"
-datestamp = "1330042387"
+datestamp = "1333498662"
 

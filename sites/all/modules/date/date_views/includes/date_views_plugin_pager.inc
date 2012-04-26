@@ -105,8 +105,8 @@ class date_views_plugin_pager extends views_plugin_pager {
     $form['link_format'] = array(
       '#title' => t('Link format'),
       '#type' => 'select',
-      '#options' => array('pager' => t('Pager'), 'clean' => t('Clean')),
-      '#description' => t("The format for pager link urls. With the Pager format, the links look like 'calendar/?date=2020-05'. The Clean format links look like 'calendar/2020-05'. The Clean format links look nicer but the Pager format links are likely to work better if the calendar is used in blocks or panels."),
+      '#options' => array('pager' => t('Pager'), 'clean' => t('Clean URL')),
+      '#description' => t("The format for pager link urls. With the Pager format, the links look like 'calendar/?date=2020-05'. The Clean URL format links look like 'calendar/2020-05'. The Clean format links look nicer but the Pager format links are likely to work better if the calendar is used in blocks or panels."),
       '#default_value' => $this->options['link_format'],
       '#required' => TRUE,
     );

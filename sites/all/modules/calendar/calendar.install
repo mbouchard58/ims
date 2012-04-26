@@ -16,3 +16,12 @@ function calendar_update_7000() {
   // Remove the former Calendar legend block, if any.
   db_query("DELETE FROM {block} WHERE module = 'calendar' AND delta = '0'");
 }
+
+/**
+ * Uninstall Calendar iCal module so it can be removed.
+ */
+function calendar_update_7001() {
+  if (module_exists('calendar_ical')) {
+    module_disable(array('calendar_ical'));
+  }
+}

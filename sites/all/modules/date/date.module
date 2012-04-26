@@ -529,48 +529,43 @@ function date_entity_metadata_property_info_alter(&$info, $entity_type, $field, 
     $property['setter callback'] = 'date_entity_metadata_field_setter';
     unset($property['query callback']);
   }
-
-  // Define a simple data structure containing the start date.
-  $property['type'] = ($field['cardinality'] != 1) ? 'list<struct>' : 'struct';
-  $property['getter callback'] = 'entity_metadata_field_verbatim_get';
-  $property['setter callback'] = 'entity_metadata_field_verbatim_set';
-  $property['property info'] = array(
-    'value' => array(
-      'type' => 'date',
-      'label' => t('Start date'),
-      'getter callback' => 'date_entity_metadata_struct_getter',
-      'setter callback' => 'date_entity_metadata_struct_setter',
-      // The getter and setter callbacks for 'value' and 'value2'
-      // will not provide the field name as $name, we'll add it to $info.
-      'field_name' => $field['field_name'],
-      // Alert Microdata module that this value can be exposed in microdata.
-      'microdata' => TRUE,
-    ),
-  );
-  // If this field has an end date, add info for end date and duration to the
-  // data structure.
   if (!empty($field['settings']['todate'])) {
-    $property['property info']['value2'] = array(
-      'type' => 'date',
-      'label' => t('End date'),
-      'getter callback' => 'date_entity_metadata_struct_getter',
-      'setter callback' => 'date_entity_metadata_struct_setter',
-      // The getter and setter callbacks for 'value' and 'value2'
-      // will not provide the field name as $name, we'll add it to $info.
-      'field_name' => $field['field_name'],
+    // Define a simple data structure containing both dates.
+    $property['type'] = ($field['cardinality'] != 1) ? 'list<struct>' : 'struct';
+    $property['getter callback'] = 'entity_metadata_field_verbatim_get';
+    $property['setter callback'] = 'entity_metadata_field_verbatim_set';
+    $property['property info'] = array(
+      'value' => array(
+        'type' => 'date',
+        'label' => t('Start date'),
+        'getter callback' => 'date_entity_metadata_struct_getter',
+        'setter callback' => 'date_entity_metadata_struct_setter',
+        // The getter and setter callbacks for 'value' and 'value2'
+        // will not provide the field name as $name, we'll add it to $info.
+        'field_name' => $field['field_name'],
+      ),
+      'value2' => array(
+        'type' => 'date',
+        'label' => t('End date'),
+        'getter callback' => 'date_entity_metadata_struct_getter',
+        'setter callback' => 'date_entity_metadata_struct_setter',
+        // The getter and setter callbacks for 'value' and 'value2'
+        // will not provide the field name as $name, we'll add it to $info.
+        'field_name' => $field['field_name'],
+      ),
+      'duration' => array(
+        'type' => 'duration',
+        'label' => t('Duration'),
+        'desription' => t('The duration of the time period given by the dates.'),
+        'getter callback' => 'date_entity_metadata_duration_getter',
+        // No setter callback for duration.
+        // The getter callback for duration will not provide the field name
+        // as $name, we'll add it to $info.
+        'field_name' => $field['field_name'],
+      ),
     );
-    $property['property info']['duration'] = array(
-      'type' => 'duration',
-      'label' => t('Duration'),
-      'desription' => t('The duration of the time period given by the dates.'),
-      'getter callback' => 'date_entity_metadata_duration_getter',
-      // No setter callback for duration.
-      // The getter callback for duration will not provide the field name
-      // as $name, we'll add it to $info.
-      'field_name' => $field['field_name'],
-    );
+    unset($property['query callback']);
   }
-  unset($property['query callback']);
 }
 
 /**

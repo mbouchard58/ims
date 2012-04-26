@@ -74,8 +74,6 @@ function theme_date_display_combination($variables) {
   $attributes  = $variables['attributes'];
   $rdf_mapping = $variables['rdf_mapping'];
   $add_rdf     = $variables['add_rdf'];
-  $microdata   = $variables['microdata'];
-  $add_microdata = $variables['add_microdata'];
   $precision   = date_granularity_precision($field['settings']['granularity']);
 
   $output = '';
@@ -164,8 +162,6 @@ function theme_date_display_combination($variables) {
       'attributes' => $attributes,
       'rdf_mapping' => $rdf_mapping,
       'add_rdf' => $add_rdf,
-      'microdata' => $microdata,
-      'add_microdata' => $add_microdata,
       'dates' => $dates,
     ));
   }
@@ -226,35 +222,18 @@ function template_preprocess_date_display_single(&$variables) {
     );
     $variables['attributes'] = $variables['attributes'] + $base_attributes;
   }
-  // If microdata is enabled and the user has configured microdata for the
-  // start date property, add the ISO formatted date value to the microdata
-  // attributes.
-  if (isset($variables['add_microdata']) && !empty($variables['microdata']['value']['#attributes']['itemprop'])) {
-    $variables['microdata']['value']['#attributes']['content'] = $variables['dates']['value']['formatted_iso'];
-  }
 }
 
 /**
  * Returns HTML for a date element formatted as a single date.
  */
 function theme_date_display_single($variables) {
-  $output = '';
   $date = $variables['date'];
   $timezone = $variables['timezone'];
   $attributes = $variables['attributes'];
-  $microdata = !empty($variables['microdata']) ? $variables['microdata'] : array();
 
   // Wrap the result with the attributes.
-  $output = '<span class="date-display-single"' . drupal_attributes($attributes) . '>' . $date . $timezone . '</span>';
-
-  // If microdata attributes for the start date property have been passed in,
-  // add the microdata in a meta tag.
-  if (isset($variables['add_microdata']) && isset($microdata['value']) && !empty($microdata['value']['#attributes'])) {
-    $md_attributes = $microdata['value']['#attributes'];
-    $output .= '<meta' . drupal_attributes($md_attributes) . '/>';
-  }
-
-  return $output;
+  return '<span class="date-display-single"' . drupal_attributes($attributes) . '>' . $date . $timezone . '</span>';
 }
 
 /**

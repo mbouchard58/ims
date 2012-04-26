@@ -6,6 +6,21 @@ Version 7.x-2.x-dev
 ===================
 
 ======================
+Version 7.x-2.5
+======================
+
+- Fix nasty errors on views that have no row indexes, like the frontage view.
+
+======================
+Version 7.x-2.4
+======================
+
+- Issue #1534342 by bass, Make name of clean pager option easier to translate.
+- Add a hook to alter the default date for a Date argument.
+- Issue #1531904, Make sure that multiple value dates that have the delta set only display the selected value.
+- Revert Issue #1266688 by fago, This change broke Entity token support.
+
+======================
 Version 7.x-2.3
 ======================
 

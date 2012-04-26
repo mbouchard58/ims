@@ -125,8 +125,6 @@ function date_field_formatter_view($entity_type, $entity, $field, $instance, $la
     'attributes' => array(),
     'rdf_mapping' => array(),
     'add_rdf' => module_exists('rdf'),
-    'microdata' => array(),
-    'add_microdata' => module_exists('microdata'),
   );
 
   // If there is an RDf mapping for this date field, pass it down to the theme.
@@ -136,11 +134,10 @@ function date_field_formatter_view($entity_type, $entity, $field, $instance, $la
       $variables['rdf_mapping'] = $rdf_mapping = $entity->rdf_mapping[$field['field_name']];
     }
   }
-  // If Microdata is enabled, pass the microdata attributes for this field down
-  // to the theme.
-  if ($variables['add_microdata'] && isset($entity->microdata[$field['field_name']])) {
-    $variables['microdata'] = $microdata = $entity->microdata[$field['field_name']];
-  }
+
+  // Give other modules a chance to prepare the entity before formatting it.
+  drupal_alter('date_formatter_pre_view', $entity, $variables);
+
   // See if we are only supposed to display a selected
   // item from multiple value date fields.
   $selected_deltas = array();

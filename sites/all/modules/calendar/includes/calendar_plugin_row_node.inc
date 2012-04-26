@@ -389,7 +389,6 @@ class calendar_plugin_row_node extends views_plugin_row {
 
   function explode_values($event) {
     $rows = array();
-
     $date_info = $this->date_argument->view->date_info;
     $item_start_date = $event->date_start;
     $item_end_date = $event->date_end;

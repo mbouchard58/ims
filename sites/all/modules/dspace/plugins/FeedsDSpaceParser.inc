@@ -17,71 +17,60 @@ class FeedsDSpaceParser extends FeedsParser {
    */
   public function parse(FeedsSource $source, FeedsFetcherResult $fetcher_result) {
     $xml = new SimpleXMLElement($fetcher_result->getRaw());
-    // dvm($xml, $name = NULL);
     $result = new FeedsParserResult();
 
-    $items = $xml->xpath('/items_collection/items[isWithdrawn != "true"]');
-    //kpr($items, $return = false, $name = NULL);
+    $items = $xml->xpath('/collections/items/itementity[isWithdrawn != "true"]');
 
     foreach ($items as $item) {
-      //dvr($item, $name = NULL);
-
       $publication['guid'] = (string) $item->handle;
       $publication['id'] = (string) $item->id;
       $publication['lastmodified'] = (string) $item->lastModified;
       $publication['title'] = (string) $item->name;
-      $publication['submitter'] = (string) $item->submitter->email;
-      $publication['collection'] = (string) $item->collections->collectionentity->name;
+      $publication['submitter'] = (string) $item->submitter->netId;
 
       // Dublin Core Metadata.
+      $metadata = (string) $item->metadata;
+      $metadata = simplexml_load_string("<metadata>" . $metadata . "</metadata>");
 
-      $mdEntities = $item->xpath('metadata/metadataentity');
-      //dvr($mdEntities[0], $name = NULL);
+      $type = $metadata->xpath('/metadata/meta[@name = "DC.type"]/@content');
+      $publication['type'] = (string) $type[0]->content;
 
-      foreach ($mdEntities as $mdEntity) {
-         switch ($mdEntity->element) {
-            case 'contributor':
-               $publication['creators'][] = (string) $mdEntity->value;
-               break;
-            case 'date':
-               if ($mdEntity->qualifier == 'issued') {
-                   $publication['issued'] = (string) $mdEntity->value;
-               }
-               break;
-            case 'identifier':
-               $publication['identifier'] = (string) $mdEntity->value;
-               break;
-            case 'description':
-               if ($mdEntity->qualifier == 'abstract') {
-                   $publication['abstract'] = (string) $mdEntity->value;
-               }
-               break;
-            case 'relation':
-               $publication['number'] = (string) $mdEntity->value;
-               break;
-            case 'subject':
-               $publication['keywords'][] = (string) $mdEntity->value;
-               break;
-            case 'type':
-               $publication['type'] = (string) $mdEntity->value;
-               break;
-            default:
-               break;
-        }
+      $identifier = $metadata->xpath('/metadata/meta[@name = "DC.identifier"]/@content');
+      $publication['identifier'] = (string) $identifier[0]->content;
 
-/*
+      $number = $metadata->xpath('/metadata/meta[@name = "DC.relation" and not(@scheme)]/@content');
+      $publication['number'] = (string) $number[0]->content;
+
+      $creators = $metadata->xpath('/metadata/meta[@name = "DC.creator"]/@content');
+      foreach ($creators as $creator) {
+        $publication['creators'][] = (string) $creator;
+      }
+
+      $authors = $metadata->xpath('/metadata/meta[@name = "DC.contributor.author"]/@content');
+      foreach ($authors as $author) {
+        $publication['authors'][] = (string) $author;
+      }
+
+      $keywords = $metadata->xpath('/metadata/meta[@name = "DC.subject"]/@content');
+      foreach ($keywords as $keyword) {
+        $publication['keywords'][] = (string) $keyword;
+      }
+
+      $abstract = $metadata->xpath('/metadata/meta[@name = "DCTERMS.abstract"]/@content');
+      $publication['abstract'] = (string) $abstract[0]->content;
+
+      $issued = $metadata->xpath('/metadata/meta[@name = "DCTERMS.issued"]/@content');
+      $publication['issued'] = (string) $issued[0]->content;
 
       $citation = $metadata->xpath('/metadata/meta[@name = "DCTERMS.bibliographicCitation"]/@content');
       $publication['citation'] = (string) $citation[0]->content;
-*/
-      } // close:foreach ($mdEntities as $mdEntity)
 
       $result->items[] = $publication;
       unset($publication);
-    } // close:foreach ($items as $item) 
+    }
 
     return $result;
-  } // close: function parse()
+  }
 
   /**
    * Implements FeedsParser::getMappingSources().
@@ -124,6 +113,10 @@ class FeedsDSpaceParser extends FeedsParser {
         'name' => t('Creators'),
         'description' => t('Creators of the feed item.'),
       ),
+      'authors' => array(
+        'name' => t('Authors'),
+        'description' => t('Authors of the feed item.'),
+      ),
       'keywords' => array(
         'name' => t('Keywords'),
         'description' => t('Keywords of the feed item.'),
@@ -139,10 +132,6 @@ class FeedsDSpaceParser extends FeedsParser {
       'citation' => array(
         'name' => t('Citation'),
         'description' => t('Bibliographic citation of the feed item.'),
-      ),
-      'collection' => array(
-        'name' => t('Collection'),
-        'description' => t('Collection to which this feed item belongs.'),
       ),
     )+ parent::getMappingSources();
   }

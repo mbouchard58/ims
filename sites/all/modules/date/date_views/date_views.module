@@ -408,3 +408,22 @@ function date_views_select_validate(&$form, &$form_state) {
     }
   }
 }
+
+/**
+ * Implements hook_date_formatter_view_alter().
+ *
+ * If we are displaying a date from a view, see if we have information about
+ * which multiple value to display. If so, set the date_id in the entity.
+ */
+function date_views_date_formatter_pre_view_alter(&$entity, &$variables) {
+  // Some views have no row index.
+  if (!empty($entity->view) && isset($entity->view->row_index)) {
+    $field = $variables['field'];
+    $date_id = 'date_id_' . $field['field_name'];
+    $date_delta = 'date_delta_' . $field['field_name'];
+    $date_item = $entity->view->result[$entity->view->row_index];
+    if (!empty($date_item->$date_id)) {
+      $entity->date_id = 'date.' . $date_item->$date_id . '.' . $field['field_name'] . '.' . $date_item->$date_delta . '.0';
+    }
+  }
+}

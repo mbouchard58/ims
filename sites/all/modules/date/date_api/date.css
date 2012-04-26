@@ -13,14 +13,10 @@
   padding: 0;
 }
 .container-inline-date > .form-item {
-  border: 1px #dedede solid;
   display: inline-block;
   margin-right: 0.5em; /* LTR */
   margin-bottom: 10px;
   vertical-align: top;
-}
-.views-exposed-form .container-inline-date > .form-item {
-  border:none;
 }
 .container-inline-date .form-item .form-item {
   float: left; /* LTR */

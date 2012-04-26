@@ -40,50 +40,50 @@ function dspace_biblio_help($path, $arg) {
 function dspace_biblio_feeds_processor_targets_alter(&$targets, $entity_type, $bundle_name) {
   if ($entity_type == 'node' && $bundle_name == 'biblio') {
     // Declare some biblio fields.
-    $targets['biblio_abst_e'] = array(
-      'name' => 'Biblio: Abstract',
-      'callback' => 'dspace_biblio_set_target',
+    $targets['dspace_biblio_abst_e'] = array(
+      'name'        => 'Biblio: Abstract',
+      'callback'    => 'dspace_biblio_set_target',
       'description' => t('Biblio abstract.'),
     );
-    $targets['biblio_type'] = array(
+    $targets['dspace_biblio_type'] = array(
       'name' => 'Biblio: Type',
       'callback' => 'dspace_biblio_set_target',
       'description' => t('The numeric type of bibliographic resource, e.g. 100.'),
     );
-    $targets['biblio_type_name'] = array(
+    $targets['dspace_biblio_type_name'] = array(
       'name' => 'Biblio: Type Name',
       'callback' => 'dspace_biblio_set_target',
       'description' => t('The type of bibliographic resource, e.g. Book.'),
     );
-    $targets['biblio_contributors'] = array(
+    $targets['dspace_biblio_contributors'] = array(
       'name' => 'Biblio: Contributor(s)',
       'callback' => 'dspace_biblio_set_target',
       'description' => t('Contributor(s) of publication.'),
     );
-    $targets['biblio_keywords'] = array(
+    $targets['dspace_biblio_keywords'] = array(
       'name' => 'Biblio: Keywords',
       'callback' => 'dspace_biblio_set_target',
       'description' => t('Keyword(s) of publication.'),
     );
-    $targets['biblio_date'] = array(
+    $targets['dspace_biblio_date'] = array(
       'name' => 'Biblio: Date',
       'callback' => 'dspace_biblio_set_target',
       'description' => t('Date of publication.'),
     );
-    $targets['biblio_year'] = array(
+    $targets['dspace_biblio_year'] = array(
       'name' => 'Biblio: Year',
       'callback' => 'dspace_biblio_set_target',
       'description' => t('Year of publication.'),
     );
-    $targets['biblio_citekey'] = array(
+    $targets['dspace_biblio_citekey'] = array(
       'name' => 'Biblio: Citekey',
       'callback' => 'dspace_biblio_set_target',
     );
-    $targets['biblio_url'] = array(
+    $targets['dspace_biblio_url'] = array(
       'name' => 'Biblio: URL',
       'callback' => 'dspace_biblio_set_target',
     );
-    $targets['biblio_number'] = array(
+    $targets['dspace_biblio_number'] = array(
       'name' => 'Biblio: Number',
       'callback' => 'dspace_biblio_set_target',
     );
@@ -104,15 +104,17 @@ function dspace_biblio_feeds_processor_targets_alter(&$targets, $entity_type, $b
  *
  */
 function dspace_biblio_set_target($source, $entity, $target, $value) {
+  feeds_dbg("Target: " . $target);
+  feeds_dbg("Value: " . $value);
 
   switch ($target) {
-    case 'biblio_abst_e':
+    case 'dspace_biblio_abst_e':
       $entity->biblio_abst_e = trim($value);
       break;
-    case 'biblio_type_of_work':
+    case 'dspace_biblio_type_of_work':
       $entity->biblio_type_of_work = trim($value);
       break;
-    case 'biblio_contributors':
+    case 'dspace_biblio_contributors':
       $contributors = $value;
       foreach ($contributors as $key => $contributor) {
         $entity->biblio_contributors[$key] = array(
@@ -122,30 +124,30 @@ function dspace_biblio_set_target($source, $entity, $target, $value) {
         );
       }
       break;
-    case 'biblio_keywords':
+    case 'dspace_biblio_keywords':
       $keywords = $value;
       foreach ($keywords as $key => $keyword) {
         $entity->biblio_keywords[$key] = trim($keyword);
       }
       break;
-    case 'biblio_date':
+    case 'dspace_biblio_date':
       date_default_timezone_set('UTC');
       $entity->biblio_date = date('m/Y', strtotime(trim($value)));
       break;
-    case 'biblio_year':
+    case 'dspace_biblio_year':
       date_default_timezone_set('UTC');
       $entity->biblio_year = date('Y', strtotime(trim($value)));
       break;
-    case 'biblio_citekey':
+    case 'dspace_biblio_citekey':
       $entity->biblio_citekey = trim($value);
       break;
-    case 'biblio_url':
+    case 'dspace_biblio_url':
       $entity->biblio_url = trim($value);
       break;
-    case 'biblio_number':
+    case 'dspace_biblio_number':
       $entity->biblio_number = trim($value);
       break;
-    case 'biblio_type':
+    case 'dspace_biblio_type_name':
       // Publication type defaults to "Miscellaneous".
       $type_id = 129;
 
