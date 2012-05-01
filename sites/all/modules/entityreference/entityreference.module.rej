@@ -1,0 +1,26 @@
+***************
+*** 783,793 ****
+      // Loop through the products and convert them into autocomplete output.
+      foreach ($entity_labels as $entity_id => $label) {
+        $key = "$label ($entity_id)";
+        // Names containing commas or quotes must be wrapped in quotes.
+        if (strpos($key, ',') !== FALSE || strpos($key, '"') !== FALSE) {
+          $key = '"' . str_replace('"', '""', $key) . '"';
+        }
+-       $matches[$prefix . $key] = '<div class="reference-autocomplete">' . check_plain($label) . '</div>';
+      }
+    }
+  
+--- 783,794 ----
+      // Loop through the products and convert them into autocomplete output.
+      foreach ($entity_labels as $entity_id => $label) {
+        $key = "$label ($entity_id)";
++       $key = preg_replace('/\s\s+/', ' ', str_replace("\n", '', trim(decode_entities(strip_tags($key)))));
+        // Names containing commas or quotes must be wrapped in quotes.
+        if (strpos($key, ',') !== FALSE || strpos($key, '"') !== FALSE) {
+          $key = '"' . str_replace('"', '""', $key) . '"';
+        }
++       $matches[$prefix . $key] = '<div class="reference-autocomplete">' . $label . '</div>';
+      }
+    }
+  
