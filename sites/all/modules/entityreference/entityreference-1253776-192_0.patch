@@ -1,0 +1,501 @@
+diff --git a/entityreference.info b/entityreference.info
+index a231b23..561d74a 100644
+--- a/entityreference.info
++++ b/entityreference.info
+@@ -10,7 +10,12 @@ files[] = entityreference.migrate.inc
+ 
+ ; Our plugins interfaces and abstract implementations.
+ files[] = plugins/selection/abstract.inc
++files[] = plugins/selection/views.inc
+ files[] = plugins/behavior/abstract.inc
+ 
++files[] = views/entityreference_plugin_display.inc
++files[] = views/entityreference_plugin_style.inc
++files[] = views/entityreference_plugin_row_fields.inc
++
+ ; Tests.
+ files[] = tests/entityreference.handlers.test
+diff --git a/entityreference.module b/entityreference.module
+index 18b329e..8d1dbed 100644
+--- a/entityreference.module
++++ b/entityreference.module
+@@ -783,11 +783,12 @@ function entityreference_autocomplete_callback($type, $field_name, $entity_type,
+     // Loop through the products and convert them into autocomplete output.
+     foreach ($entity_labels as $entity_id => $label) {
+       $key = "$label ($entity_id)";
++      $key = preg_replace('/\s\s+/', ' ', str_replace("\n", '', trim(decode_entities(strip_tags($key)))));
+       // Names containing commas or quotes must be wrapped in quotes.
+       if (strpos($key, ',') !== FALSE || strpos($key, '"') !== FALSE) {
+         $key = '"' . str_replace('"', '""', $key) . '"';
+       }
+-      $matches[$prefix . $key] = '<div class="reference-autocomplete">' . check_plain($label) . '</div>';
++      $matches[$prefix . $key] = '<div class="reference-autocomplete">' . $label . '</div>';
+     }
+   }
+ 
+diff --git a/plugins/selection/EntityReference_SelectionHandler_Views.class.php b/plugins/selection/EntityReference_SelectionHandler_Views.class.php
+new file mode 100644
+index 0000000..c4e50dc
+--- /dev/null
++++ b/plugins/selection/EntityReference_SelectionHandler_Views.class.php
+@@ -0,0 +1,170 @@
++<?php
++
++/**
++ * Entity handler for Views.
++ */
++class EntityReference_SelectionHandler_Views implements EntityReference_SelectionHandler {
++
++  /**
++   * Implements EntityReferenceHandler::getInstance().
++   */
++  public static function getInstance($field, $instance) {
++    return new EntityReference_SelectionHandler_Views($field, $instance);
++  }
++
++  protected function __construct($field, $instance) {
++    $this->field = $field;
++    $this->instance = $instance;
++  }
++
++  /**
++   * Implements EntityReferenceHandler::settingsForm().
++   */
++  public static function settingsForm($field, $instance) {
++    $view_settings = empty($field['settings']['handler_settings']['view']) ? '' : $field['settings']['handler_settings']['view'];
++    $displays = views_get_applicable_views('entityreference display');
++    // Filter views that list the entity type we want, and group the separate
++    // displays by view.
++    $entity_info = entity_get_info($field['settings']['target_type']);
++    $options = array();
++    foreach ($displays as $data) {
++      list($view, $display_id) = $data;
++      if ($view->base_table == $entity_info['base table']) {
++        $options[$view->name . ':' . $display_id] = $view->name .' - ' . $view->display[$display_id]->display_title;
++      }
++    }
++
++    if ($options) {
++      // The value of the 'view_and_display' select below will need to be split
++      // into 'view_name' and 'view_display' in the final submitted values, so
++      // we massage the data at validate time on the wrapping element (not
++      // ideal).
++      $form['view']['#element_validate'] = array('entityreference_view_settings_validate');
++
++      $options = array('' => '<' . t('none') . '>') + $options;
++      $default = empty($view_settings['view_name']) ? '' : $view_settings['view_name'] . ':' .$view_settings['display_name'];
++      $form['view']['view_and_display'] = array(
++        '#type' => 'select',
++        '#title' => t('View used to select the entities'),
++        '#options' => $options,
++        '#default_value' => $default,
++        '#description' => '<p>' . t('Choose the view and display that select the entities that can be referenced.<br />Only views with a display of type "Entity Reference" are eligible.') . '</p>',
++      );
++
++      $default = empty($view_settings['args']) ? '' : implode(', ', $view_settings['args']);
++      $form['view']['args'] = array(
++        '#type' => 'textfield',
++        '#title' => t('View arguments'),
++        '#default_value' => $default,
++        '#required' => FALSE,
++        '#description' => t('Provide a comma separated list of arguments to pass to the view.'),
++      );
++    }
++    else {
++      $form['view']['no_view_help'] = array(
++        '#markup' => '<p>' . t('No eligible views were found. <a href="@create">Create a view</a> with an <em>Entity Reference</em> display, or add such a display to an <a href="@existing">existing view</a>.', array(
++          '@create' => url('admin/structure/views/add'),
++          '@existing' => url('admin/structure/views'),
++        )) . '</p>',
++      );
++    }
++    return $form;
++  }
++
++  protected function initializeView($match = NULL, $match_operator = 'CONTAINS', $limit = 0, $ids = NULL) {
++    $view_name = $this->field['settings']['handler_settings']['view']['view_name'];
++    $display_name = $this->field['settings']['handler_settings']['view']['display_name'];
++    $args = $this->field['settings']['handler_settings']['view']['args'];
++    $entity_type = $this->field['settings']['target_type'];
++
++    // Check that the view is valid and the display still exists.
++    $this->view = views_get_view($view_name);
++    if (!$this->view || !isset($this->view->display[$display_name]) || !$this->view->access($display_name)) {
++      watchdog('entityreference', 'The view %view_name is no longer eligible for the %field_name field.', array('%view_name' => $view_name, '%field_name' => $this->instance['label']), WATCHDOG_WARNING);
++      return FALSE;
++    }
++    $this->view->set_display($display_name);
++
++    // Make sure the query is not cached
++    $this->view->is_cacheable = FALSE;
++
++    // Pass options to the display handler to make them available later.
++    $entityreference_options = array(
++      'match' => $match,
++      'match_operator' => $match_operator,
++      'limit' => $limit,
++      'ids' => $ids,
++    );
++    $this->view->display_handler->set_option('entityreference_options', $entityreference_options);
++    return TRUE;
++  }
++
++  /**
++   * Implements EntityReferenceHandler::getReferencableEntities().
++   */
++  public function getReferencableEntities($match = NULL, $match_operator = 'CONTAINS', $limit = 0) {
++    $display_name = $this->field['settings']['handler_settings']['view']['display_name'];
++    $args = $this->field['settings']['handler_settings']['view']['args'];
++    $result = array();
++    if ($this->initializeView($match, $match_operator, $limit)) {
++      // Get the results.
++      $result = $this->view->execute_display($display_name, $args);
++    }
++    return $result;
++  }
++
++  /**
++   * Implements EntityReferenceHandler::countReferencableEntities().
++   */
++  function countReferencableEntities($match = NULL, $match_operator = 'CONTAINS') {
++    $this->getReferencableEntities($match, $match_operator);
++    return $this->view->total_items;
++  }
++
++  function validateReferencableEntities(array $ids) {
++    $display_name = $this->field['settings']['handler_settings']['view']['display_name'];
++    $args = $this->field['settings']['handler_settings']['view']['args'];
++    $result = array();
++    if ($this->initializeView(NULL, 'CONTAINS', 0, $ids)) {
++      // Get the results.
++      $entities = $this->view->execute_display($display_name, $args);
++      $result = array_keys($entities);
++    }
++    return $result;
++  }
++
++  /**
++   * Implements EntityReferenceHandler::getLabel().
++   */
++  public function getLabel($entity) {
++    return entity_label($this->field['settings']['target_type'], $entity);
++  }
++
++  /**
++   * Implements EntityReferenceHandler::entityFieldQueryAlter().
++   */
++  public function entityFieldQueryAlter(SelectQueryInterface $query) {
++
++  }
++
++}
++
++function entityreference_view_settings_validate($element, &$form_state, $form) {
++  // Split view name and display name from the 'view_and_display' value.
++  if (!empty($element['view_and_display']['#value'])) {
++    list($view, $display) = explode(':', $element['view_and_display']['#value']);
++  }
++  else {
++    $view = '';
++    $display = '';
++  }
++
++  // Explode the 'args' string into an actual array. Beware, explode() turns an
++  // empty string into an array with one empty string. We'll need an empty array
++  // instead.
++  $args_string = trim($element['args']['#value']);
++  $args = ($args_string === '') ? array() : array_map('trim', explode(',', $args_string));
++
++  $value = array('view_name' => $view, 'display_name' => $display, 'args' => $args);
++  form_set_value($element, $value, $form_state);
++}
+diff --git a/plugins/selection/views.inc b/plugins/selection/views.inc
+new file mode 100644
+index 0000000..5694bf3
+--- /dev/null
++++ b/plugins/selection/views.inc
+@@ -0,0 +1,9 @@
++<?php
++
++if (module_exists('views')) {
++  $plugin = array(
++    'title' => t('Views: Filter by an entity reference view'),
++    'class' => 'EntityReference_SelectionHandler_Views',
++    'weight' => 0,
++  );
++}
+diff --git a/views/entityreference.views.inc b/views/entityreference.views.inc
+index 0b23d74..e095dd9 100644
+--- a/views/entityreference.views.inc
++++ b/views/entityreference.views.inc
+@@ -84,3 +84,53 @@ function entityreference_field_views_data_views_data_alter(&$data, $field) {
+     }
+   }
+ }
++
++/**
++ * Implements hook_views_plugins().
++ */
++function entityreference_views_plugins() {
++  $plugins = array(
++    'display' => array(
++      'entityreference' => array(
++        'title' => t('Entity Reference'),
++        'admin' => t('Entity Reference'),
++        'help' => 'Selects referenceable entities for an entity reference field',
++        'handler' => 'entityreference_plugin_display',
++        'uses hook menu' => FALSE,
++        'use ajax' => FALSE,
++        'use pager' => FALSE,
++        'accept attachments' => FALSE,
++        // Custom property, used with views_get_applicable_views() to retrieve
++        // all views with a 'Entity Reference' display.
++        'entityreference display' => TRUE,
++      ),
++    ),
++    'style' => array(
++      'entityreference_style' => array(
++        'title' => t('Entity Reference list'),
++        'help' => 'Returns results as a PHP array of labels and rendered rows.',
++        'handler' => 'entityreference_plugin_style',
++        'theme' => 'views_view_unformatted',
++        'uses row plugin' => TRUE,
++        'uses fields' => TRUE,
++        'uses options' => TRUE,
++        'type' => 'entityreference',
++        'even empty' => TRUE,
++      ),
++    ),
++    'row' => array(
++      'entityreference_fields' => array(
++        'title' => t('Inline fields'),
++        'help' => t('Displays the fields with an optional template.'),
++        'handler' => 'entityreference_plugin_row_fields',
++        'theme' => 'views_view_fields',
++        'theme path' => drupal_get_path('module', 'views') . '/theme',
++        'theme file' => 'theme.inc',
++        'uses fields' => TRUE,
++        'uses options' => TRUE,
++        'type' => 'entityreference',
++      ),
++    ),
++  );
++  return $plugins;
++}
+diff --git a/views/entityreference_plugin_display.inc b/views/entityreference_plugin_display.inc
+new file mode 100644
+index 0000000..7068d75
+--- /dev/null
++++ b/views/entityreference_plugin_display.inc
+@@ -0,0 +1,96 @@
++<?php
++
++/**
++ * @file
++ * Handler for entityreference_plugin_display.
++ */
++class entityreference_plugin_display extends views_plugin_display {
++
++  function option_definition() {
++    $options = parent::option_definition();
++
++    // Force the style plugin to 'entityreference_style' and the row plugin to
++    // 'fields'.
++    $options['style_plugin']['default'] = 'entityreference_style';
++    $options['defaults']['default']['style_plugin'] = FALSE;
++    $options['defaults']['default']['style_options'] = FALSE;
++    $options['row_plugin']['default'] = 'entityreference_fields';
++    $options['defaults']['default']['row_plugin'] = FALSE;
++    $options['defaults']['default']['row_options'] = FALSE;
++
++    // Set the display title to an empty string (not used in this display type).
++    $options['title']['default'] = '';
++    $options['defaults']['default']['title'] = FALSE;
++
++    return $options;
++  }
++
++  function get_style_type() {
++    return 'entityreference';
++  }
++
++  function execute() {
++    return $this->view->render($this->display->id);
++  }
++
++  function render() {
++
++    if (!empty($this->view->result) || !empty($this->view->style_plugin->definition['even empty'])) {
++      return $this->view->style_plugin->render($this->view->result);
++    }
++    return '';
++  }
++
++  function uses_exposed() {
++    return FALSE;
++  }
++
++  function query() {
++    $options = $this->get_option('entityreference_options');
++
++    // Play nice with Views UI 'preview' : if the view is not executed through
++    // EntityReference_SelectionHandler_Views::getReferencableEntities(),
++    // don't alter the query.
++    if (empty($options)) {
++      return;
++    }
++
++    // Make sure the id field is included in the results, and save its alias
++    // so that references_plugin_style can retrieve it.
++    $this->id_field_alias = $id_field = $this->view->query->add_field($this->view->base_table, $this->view->base_field);
++    if (strpos($id_field, '.') === false) {
++      $id_field = $this->view->base_table .'.'.$this->id_field_alias;
++    }
++
++    // Restrict the autocomplete options based on what's been typed already.
++    if (isset($options['match'])) {
++      $style_options = $this->get_option('style_options');
++      $value = db_like($options['match']) . '%';
++      if ($options['match_operator'] != 'STARTS_WITH') {
++        $value = '%' . $value;
++      }
++
++      // Multiple search fields are OR'd together
++      $conditions = db_or();
++
++      // Build the condition using the selected search fields
++      foreach ($style_options['search_fields'] as $field_alias) {
++        if (!empty($field_alias)) {
++          // Get the table and field names for the checked field
++          $field = $this->view->query->fields[$this->view->field[$field_alias]->field_alias];
++          // Add an OR condition for the field
++          $conditions->condition($field['table'] . '.' . $field['field'], $value, 'LIKE');
++        }
++      }
++
++      $this->view->query->add_where(NULL, $conditions);
++    }
++
++    // Add an IN condition for validation.
++    if (!empty($options['ids'])) {
++      $this->view->query->add_where(NULL, $id_field, $options['ids']);
++    }
++
++    $this->view->set_items_per_page($options['limit']);
++  }
++}
+diff --git a/views/entityreference_plugin_row_fields.inc b/views/entityreference_plugin_row_fields.inc
+new file mode 100644
+index 0000000..400603f
+--- /dev/null
++++ b/views/entityreference_plugin_row_fields.inc
+@@ -0,0 +1,36 @@
++<?php
++
++/**
++ * @file
++ * Handler for entityreference_plugin_row_fields.
++ */
++class entityreference_plugin_row_fields extends views_plugin_row_fields {
++
++  function option_definition() {
++    $options = parent::option_definition();
++
++    $options['separator'] = array('default' => '-');
++
++    return $options;
++  }
++
++  /**
++   * Provide a form for setting options.
++   */
++  function options_form(&$form, &$form_state) {
++    parent::options_form($form, $form_state);
++
++    // Expand the description of the 'Inline field' checkboxes.
++    $form['inline']['#description'] .= '<br>' . t("<strong>Note:</strong> In 'Entity Reference' displays, all fields will be displayed inline unless an explicit selection of inline fields is made here." );
++  }
++
++  function pre_render($row) {
++    // Force all fields to be inline by default.
++    if (empty($this->options['inline'])) {
++      $fields = $this->view->get_items('field', $this->display->id);
++      $this->options['inline'] = drupal_map_assoc(array_keys($fields));
++    }
++
++    return parent::pre_render($row);
++  }
++}
+diff --git a/views/entityreference_plugin_style.inc b/views/entityreference_plugin_style.inc
+new file mode 100644
+index 0000000..6d0b116
+--- /dev/null
++++ b/views/entityreference_plugin_style.inc
+@@ -0,0 +1,67 @@
++<?php
++
++/**
++ * @file
++ * Handler for entityreference_plugin_style.
++ */
++class entityreference_plugin_style extends views_plugin_style {
++
++  function option_definition() {
++    $options = parent::option_definition();
++    $options['search_fields'] = array('default' => NULL);
++
++    return $options;
++  }
++
++  // Create the options form.
++  function options_form(&$form, &$form_state) {
++    parent::options_form($form, $form_state);
++    $options = array();
++
++    if (isset($form['grouping'])) {
++      $options = $form['grouping'][0]['field']['#options'];
++      unset($options['']);
++      $form['search_fields'] = array(
++        '#type' => 'checkboxes',
++        '#title' => t('Search fields'),
++        '#options' => $options,
++        '#required' => TRUE,
++        '#default_value' => $this->options['search_fields'],
++        '#description' => t('Select the field(s) that will be searched when using the autocomplete widget.'),
++        '#weight' => -3,
++      );
++    }
++  }
++
++  function render() {
++    $options = $this->display->handler->get_option('entityreference_options');
++
++    // Play nice with Views UI 'preview' : if the view is not executed through
++    // EntityReference_SelectionHandler_Views::getReferencableEntities(), just
++    // display the HTML.
++    if (empty($options)) {
++      return parent::render();
++    }
++
++    // Group the rows according to the grouping field, if specified.
++    $sets = $this->render_grouping($this->view->result, $this->options['grouping']);
++
++    // Grab the alias of the 'id' field added by entityreference_plugin_display.
++    $id_field_alias = $this->display->handler->id_field_alias;
++
++    // @todo We don't display grouping info for now. Could be useful for select
++    // widget, though.
++    $results = array();
++    $this->view->row_index = 0;
++    foreach ($sets as $title => $records) {
++      foreach ($records as $label => $values) {
++        // Decode html, remove line breaks and extra whitespace
++        //$results[$values->{$id_field_alias}] = preg_replace('/\s\s+/', ' ', str_replace("\n", '', trim(decode_entities(strip_tags($this->row_plugin->render($values))))));
++        $results[$values->{$id_field_alias}] = preg_replace('/\s\s+/', ' ', str_replace("\n", '', decode_entities($this->row_plugin->render($values))));
++        $this->view->row_index++;
++      }
++    }
++    unset($this->view->row_index);
++    return $results;
++  }
++}
