@@ -11,7 +11,7 @@
  function ims_form_user_register_form_alter(&$form, &$form_state) {
   global $user;
 
- kpr($user, $return = FALSE, $name = NULL);
+ //kpr($user, $return = FALSE, $name = NULL);
 
   $t_role = "administrator";
 

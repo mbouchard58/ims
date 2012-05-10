@@ -18,26 +18,37 @@ class FeedsDatatelParser extends FeedsParser {
   public function parse(FeedsSource $source, FeedsFetcherResult $fetcher_result) {
     $regCount = 0;
 
+    //get vocabulary ID for "Internship Courses" vocabulary
+    // we only want students who are taking courses that have internships
+    $vid = taxonomy_vocabulary_machine_name_load("internship_courses")->vid;
+
+    //get all the terms in the vocabulary. there should only be a few
+    $terms = taxonomy_get_tree($vid);
+
+    dprint_r($terms);
+
+    //dvr($terms, $return = FALSE, $name = NULL);
+    // create a list of all the course names from the taxonomy tree
+    $termNames = array();
+    foreach ($terms as $term) {
+      $termNames[] = $term->name;
+    }
+
     $xml = new SimpleXMLElement($fetcher_result->getRaw());
-    // dvm($xml, $name = NULL);
     $result = new FeedsParserResult();
 
     $sections = $xml->xpath('course_sections/course_section');
-    //kpr($sections, $return = false, $name = NULL);
+    //kpr($sections, $return = FALSE, $name = NULL);
 
     foreach ($sections as $section) {
-      //dvr($section, $name = NULL);
-      if ($section->section_info['course_name'] == "LIS-438") {
-
+      $courseName = (string) $section->section_info['course_name'];
+      if (in_array($courseName, $termNames)) {
         $guid = (string) $section->section_info['sec_name'] . "-";
         $guid .= $section->term['term_id']; 
-        $courseName = (string) $section->section_info['course_name'];
         $secNo = (string) $section->section_info['section_no'];
 	
         $regItems = $section->xpath('registration/reg_item');
         foreach ($regItems as $regItem) {
-          // dvr($regItem->demographics, $name = NULL);
-
           $student['guid'] = $guid . "-" . $regItem->demographics['simmons_login'];
           $student['id'] = (string) $regItem->demographics['simmons_login'];
           $student['title'] = (string) $regItem->demographics['first_name'];
@@ -47,20 +58,23 @@ class FeedsDatatelParser extends FeedsParser {
           $student['email'] = (string) $regItem->demographics['simmons_email'];
           $student['course_name'] = $courseName;
           $student['section_no'] = $secNo;
-          // dvr($student, $name = NULL);
           $result->items[] = $student;
           unset($student);
 
+// $regCount exists to keep the dataset small for testing.  Remove for more advanced testing
 	  $regCount++;
 	  if ($regCount > 2) break;
 
         } // close:foreach($regItems as $regItem)
         $regCount = 0;
 
-      } // close:if ($section->xpath...)
+      } // close:if (in_array...)
 
     } // close:foreach ($sections as $section) 
-
+/******
+* add logic to delete or encrypt ls_moodle.xml
+* alternatively, the admin could just delete the feed importer when finished.
+*******/
     return $result;
   } // close: function parse()
 
