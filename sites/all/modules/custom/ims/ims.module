@@ -1,12 +1,46 @@
 <?php
+
 /**
 * Custom code for GSLIS IMS app
+* @file
+* Specifies rules for restricting user registration based on email domains.
 */
+/**
+* Implements hook_form_FORM_ID_alter().
+**/
+ function ims_form_user_register_form_alter(&$form, &$form_state) {
+  global $user;
 
+ kpr($user, $return = FALSE, $name = NULL);
+
+  $t_role = "administrator";
+
+  // allow administrator to circumvent extra validation
+  if (!in_array($t_role, $user->roles)) {
+    // this adds your custom validation function to the form validation array
+    $form['#validate'][] = 'ims_user_register_validation';
+  }
+ }
+
+function ims_user_register_validation($form, &$form_state) {
+
+  // Schools
+  $schoolDomains = array('simmons.edu', 'uwm.edu', 'ucl.ac.uk', 'miun.se', 'nyu.edu');
+
+  // Get domain
+  $email = $form_state['values']['mail'];
+  $splitIndex = strpos($email, '@')+1;
+  $emailLength = strlen($email);
+  $domain = substr($email, $splitIndex, $emailLength);
+
+  // Error if not legitimate domain
+  if ( !in_array($domain, $schoolDomains) ) {
+    form_set_error('mail', t('Invalid email address. Please use an email address from Simmons or a partner institution.'));
+  }
+}
 /**
 * @file
 * change front page based on whether user is anonymous or authenticated
-*/
 
 function ims_menu() {
    $items['front'] = array(
@@ -23,3 +57,4 @@ function ims_front() {
         $node = node_load($nid);
   return node_view($node);
 }
+*/

@@ -25,3 +25,10 @@ function calendar_update_7001() {
     module_disable(array('calendar_ical'));
   }
 }
+
+/**
+ * Delete calendar_default_view_options(), which was used by the old default view and is no longer used.
+ */
+function calendar_update_7002() {
+  variable_del('calendar_default_view_options');
+}

@@ -31,6 +31,8 @@ class FeedsDatatelParser extends FeedsParser {
 
         $guid = (string) $section->section_info['sec_name'] . "-";
         $guid .= $section->term['term_id']; 
+        $courseName = (string) $section->section_info['course_name'];
+        $secNo = (string) $section->section_info['section_no'];
 	
         $regItems = $section->xpath('registration/reg_item');
         foreach ($regItems as $regItem) {
@@ -43,6 +45,8 @@ class FeedsDatatelParser extends FeedsParser {
           $student['fname'] = (string) $regItem->demographics['first_name'];
           $student['lname'] = (string) $regItem->demographics['last_name'];
           $student['email'] = (string) $regItem->demographics['simmons_email'];
+          $student['course_name'] = $courseName;
+          $student['section_no'] = $secNo;
           // dvr($student, $name = NULL);
           $result->items[] = $student;
           unset($student);
@@ -88,6 +92,14 @@ class FeedsDatatelParser extends FeedsParser {
       'email' => array(
         'name' => t('Email'),
         'description' => t('Email of the student.'),
+      ),
+      'course_name' => array(
+        'name' => t('Course Name'),
+        'description' => t('The course in which the student is enrolled.'),
+      ),
+      'section_no' => array(
+        'name' => t('Section Number'),
+        'description' => t('The section number for the course in which the student is enrolled.'),
       ),
     )+ parent::getMappingSources();
   }

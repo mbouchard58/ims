@@ -6,6 +6,28 @@ Version 7.x-3.x-dev
 ===================
 
 ======================
+Version 7.x-3.3
+======================
+
+NEW FEATURES:
+- An option to add Colorbox settings to the calendar template has been added to admin/config/date/calendar. 
+- The template has been updated to add the Colorbox settings if the option to use them has been selected and Colorbox is enabled.
+- The theming has been altered a bit to make sure that you can display a rendered entity in a Colorbox field.
+- A new calendar style option has been added to choose fields to exclude from multi-day rows, so multi-day rows can be set up to display only the Colorbox picker.
+
+BUGFIXES:
+
+- Delete all the code used to remove default calendars, no longer needed now that the default calendar has been removed.
+- Issue #1543930 by johnv, Fix taxonomy stripe settings so they don't depend on formatter.
+- Move session tracking option to be a global option instead of a per-display option.
+- Issue #1551112, Make sure items without colors don't show up in the legend.
+- Issue #1545240, Don't try to set the date link if there is no link_display set.
+- Issue #1291768, Document caching options and add default caching to the templates.
+- Issue #1541938, Fix error when displaying the week number.
+- Issue #1550836, Fix logic error in overlapping week view that was keeping the overlap classes from getting set.
+- Style tweaks, make the day window bigger by not ending it at the bottom of the browser screen.
+
+======================
 Version 7.x-3.2
 ======================
 

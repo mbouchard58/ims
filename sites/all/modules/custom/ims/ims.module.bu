@@ -1,0 +1,56 @@
+<?php
+/**
+* Custom code for GSLIS IMS app
+* @file
+* Specifies rules for restricting user registration based on email domains.
+*/
+
+/******
+* make changes here for IMS registration validation
+ function simmons_form_alter(&$form, &$form_state, $form_id) {
+ // make sure this is the register form
+   if ($form_id == 'user_register_form') {
+ // this adds your custom validation function to the form validation array
+    $form['#validate'][] = 'simmons_user_register_validation';
+   }
+ }
+*/
+
+/**
+* @file
+* change front page based on whether user is anonymous or authenticated
+*/
+
+function ims_menu() {
+   $items['front'] = array(
+        'page callback' => 'ims_front',
+    'access callback' => TRUE,
+   );
+   return $items;
+ }
+
+// The homepage. Serves node 93 to anon and node 94 to authenticated
+function ims_front() {
+        global $user;
+        $nid = $user->uid == 0 ? 93 : 94;
+        $node = node_load($nid);
+  return node_view($node);
+}
+/**********
+* add or modify this functionality for the IMS registration validation, i.e., students and supervisors
+function simmons_user_register_validation($form, &$form_state) {
+ // Schools
+   $schoolDomains = array('simmons.edu', 'uwm.edu', 'ucl.ac.uk', 'miun.se', 'nyu.edu');
+
+ // Get domain
+       $email = $form_state['values']['mail'];
+       $splitIndex = strpos($email, '@')+1;
+       $emailLength = strlen($email);
+       $domain = substr($email, $splitIndex, $emailLength);
+
+ // Error if not legitimate domain
+   if ( !in_array($domain, $schoolDomains) ) {
+    form_set_error('mail', t('Invalid email address. Please use an email address from Simmons or a partner institution.'));
+   }
+ }
+*/

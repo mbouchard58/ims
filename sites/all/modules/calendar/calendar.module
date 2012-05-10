@@ -1,6 +1,7 @@
 <?php
 define('CALENDAR_SHOW_ALL', 0);
 define('CALENDAR_HIDE_ALL', -1);
+define('CALENDAR_EMPTY_STRIPE', '#ffffff');
 
 /**
  * @file
@@ -14,16 +15,10 @@ function calendar_menu() {
   $items['admin/config/date/calendar'] = array(
     'title' => 'Calendar',
     'description' => 'Calendar administration.',
-    'page callback' => 'calendar_admin',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('calendar_admin_settings'),
     'access callback' => 'user_access',
     'access arguments' => array('administer site configuration'),
-  );
-  $items['admin/config/date/calendar/remove'] = array(
-    'title'    => 'Remove calendar',
-    'access arguments'   => array('administer views'),
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('calendar_remove_form', 5),
-    'type' => MENU_CALLBACK,
   );
   return $items;
 }
@@ -31,95 +26,28 @@ function calendar_menu() {
 /**
  * General Calendar administration.
  */
-function calendar_admin() {
-
-  $content = '<h2>Calendar Administration</h2>';
-  $content .= t('This is the future home for calendar administration tasks.');
-
-  $calendar_options = variable_get('calendar_default_view_options', array());
-
-  if (!empty($calendar_options)) {
-    $content .= t('<h2>Deleting Calendars</h2>Calendars that were created using older versions of the !date_wizard cannot be deleted in the Views listing. You can delete them using the links below. The newer version of the Date Wizard creates views from templates that can be deleted normally.', array('!date_wizard' => l(t('Date wizard'), 'admin/config/date/tools/date_wizard')));
-
-    $calendars = array();
-    $node_types = node_type_get_names();
-    foreach ($calendar_options as $key => $option) {
-      $bundle = str_replace(array('calendar_', 'cal_'), '', $key);
-      if (array_key_exists($bundle, $node_types)) {
-        $type = $node_types[$bundle];
-        $calendars[] = array(
-          l($type, 'admin/structure/types/manage/' . $bundle . '/fields'),
-          l($key, 'admin/structure/views/edit/' . $key),
-          t('The calendar %view is a default calendar created for the content type %bundle. ', array('%view' => $key, '%bundle' => $type)),
-          l(t('remove !view', array('!view' => $key)), 'admin/config/date/calendar/remove/' . $key),
-        );
-      }
-      else {
-        // Do some cleanup while we're here if we have default calendars
-        // for non-existent content types.
-        calendar_remove($bundle);
-      }
-    }
-    if (!empty($calendars)) {
-      $header = array(t('Content Type'), t('Calendar'), t('Description'), t('Operations'));
-      $content .= theme('table', array('header' => $header, 'rows' => $calendars));
-    }
-
-  }
-  return $content;
-}
-
-/**
- * Form constructor for the date field removal form.
- *
- * Path: admin/config/date/calendar/remove
- *
- * @see calendar_remove_form_submit()
- */
-function calendar_remove_form($form, &$form_state, $view_name) {
+function calendar_admin_settings() {
   $form = array();
-  $form['view_name'] = array(
-    '#type' => 'value',
-    '#value' => $view_name,
-  );
-  $output = confirm_form($form,
-    t('Are you sure you want to remove the view %view?', array('%view' => $view_name)),
-    'admin/config/date/calendar/remove',
-    t('This action cannot be undone.'),
-    t('Remove'), t('Cancel')
-  );
 
-  return $output;
-}
+  $form['#prefix']  = '<h2>Calendar Administration</h2>';
 
-/**
- * Form submission handler for calendar_remove_form().
- */
-function calendar_remove_form_submit($form, &$form_state) {
-  $form_values = $form_state['values'];
-  $view_name = $form_values['view_name'];
-  if ($view_name && $form_values['confirm']) {
-    calendar_remove($view_name);
-    drupal_set_message(t('Removed calendar %calendar.', array('%calendar' => $view_name)));
-  }
-  $form_state['redirect'] = 'admin/config/date/calendar';
-}
+  $form['calendar_track_date'] = array(
+    '#title' => t('Track current date in session'),
+    '#type' => 'radios',
+    '#options' => array(0 => t("Never"), 1 => t('For authenticated users'), 2 => t('For all users')),
+    '#default_value' => variable_get('calendar_track_date', 1),
+    '#description' => t("Store session information about the user's current date as they move back and forth through the calendar. Without this setting users will revert to the current day each time they choose a new calendar period (year, month, week, or day). With this option set they will move to a day that conforms to the time period they were viewing before they switched. Requires session tracking which is not ordinarily enabled for anonymous users."),
+    );
 
-/**
- * Callback to remove a default calendar from the system.
- */
-function calendar_remove($view_name) {
-  // Remove any variable that creates a default view with this name.
-  $calendar_options = variable_get('calendar_default_view_options', array());
-  if (array_key_exists($view_name, $calendar_options)) {
-    unset($calendar_options[$view_name]);
-  }
-  variable_set('calendar_default_view_options', $calendar_options);
-  // Delete it from the database, if stored there.
-  if ($view = views_get_view($view_name)) {
-    $view->delete();
-  }
-  views_invalidate_cache();
+  $form['calendar_add_colorbox'] = array(
+    '#title' => t('Add Colorbox settings to Node calendar templates'),
+    '#default_value' => variable_get('calendar_add_colorbox'),
+    '#type' => 'radios',
+    '#options' => array(0 => t('No'), 1 => t('Yes')),
+    '#description' => t('To try the Colorbox settings, choose the option to add Colorbox settings to the calendar templates. Install and enable the Colorbox module, following the instructions on the Colorbox project page, then create a new calendar from a template using any date field in the Node base table. The calendar will be set up to display the calendar items in a Colorbox.'),
+    );
+
+  return system_settings_form($form);
 }
 
 /**
@@ -179,7 +107,8 @@ function calendar_preprocess_date_views_pager(&$vars) {
 function calendar_date_default_argument_alter(&$argument, &$value) {
   global $user;
   $style_options = $argument->view->display_handler->get_option('style_options');
-  if (!empty($style_options['track_date']) && ($style_options['track_date'] == 2 || !empty($user->uid))) {
+  $tracking = variable_get('calendar_track_date', 1);
+  if (!empty($tracking) && ($tracking == 2 || !empty($user->uid))) {
 
     // If this is a default date, i.e. we are visiting a new calendar display,
     // set the default date for the display. See if we already have a session
@@ -205,7 +134,8 @@ function calendar_views_pre_render(&$view) {
   global $user;
 
   $style_options = $view->display_handler->get_option('style_options');
-  if (!empty($style_options['track_date']) && ($style_options['track_date'] == 2 || !empty($user->uid))) {
+  $tracking = variable_get('calendar_track_date', 1);
+  if (!empty($tracking) && ($tracking == 2 || !empty($user->uid))) {
     foreach ($view->argument as $id => &$argument) {
 
       // If this is not a default date, i.e. we have browsed to a new calendar
@@ -430,7 +360,7 @@ function calendar_week_header($view) {
     $translated_days = date_week_days_ordered(date_week_days_abbr(TRUE));
   }
   if ($with_week) {
-    $row[] = array('header' => TRUE, 'class' => "days week", 'data' => '&nbsp;');
+    $row[] = array('header' => TRUE, 'class' => "days week", 'data' => '&nbsp;', 'header_id' => 'Week');
   }
   foreach ($untranslated_days as $delta => $day) {
     $label = $len < 3 ? drupal_substr($translated_days[$delta], 0 , $len) : $translated_days[$delta];

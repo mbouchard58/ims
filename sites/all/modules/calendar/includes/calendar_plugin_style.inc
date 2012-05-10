@@ -43,7 +43,7 @@ class calendar_plugin_style extends views_plugin_style {
     $options['groupby_times'] = array('default' => 'hour');
     $options['groupby_times_custom'] = array('default' => '');
     $options['groupby_field'] = array('default' => '');
-    $options['track_date'] = array('default' => 0);
+    $options['multiday_hidden'] = array('default' => array());
     return $options;
   }
 
@@ -142,12 +142,13 @@ class calendar_plugin_style extends views_plugin_style {
       '#description' => t('If selected, items which span multiple days will displayed as a multi-column row.  If not selected, items will be displayed as an individual column.'),
       '#dependency' => array('edit-style-options-calendar-type' => array('month', 'week')),
       );
-    $form['track_date'] = array(
-      '#title' => t('Track current date in session'),
-      '#type' => 'radios',
-      '#options' => array(0 => t("Never"), 1 => t('For authenticated users'), 2 => t('For all users')),
-      '#default_value' => $this->options['track_date'],
-      '#description' => t("Store session information about the user's current date as they move back and forth through the calendar. Without this setting users will revert to the current day each time they choose a new calendar period (year, month, week, or day). With this option set they will move to a day that conforms to the time period they were viewing before they switched. Requires session tracking which is not ordinarily enabled for anonymous users."),
+    $form['multiday_hidden'] = array(
+      '#title' => t('Fields to hide in Multi-day rows'),
+      '#default_value' => $this->options['multiday_hidden'],
+      '#type' => 'checkboxes',
+      '#options' => $field_options,
+      '#description' => t('Choose fields to hide when displayed in multi-day rows. Usually you only want to see the title or Colorbox selector in multi-day rows and would hide all other fields.'),
+      '#dependency' => array('edit-style-options-calendar-type' => array('month', 'week')),
       );
   }
 
@@ -166,6 +167,10 @@ class calendar_plugin_style extends views_plugin_style {
       form_set_value($form['groupby_times_custom'], NULL, $form_state);
     }
 
+  }
+
+  function options_submit($form, &$form_state, &$options = array()) {
+    $form_state['values']['style_options']['multiday_hidden'] = array_filter($form_state['values']['style_options']['multiday_hidden']);
   }
 
   /**

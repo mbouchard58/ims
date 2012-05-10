@@ -179,7 +179,6 @@ function media_admin_thumbnails(&$parent_form) {
 
   $fids = $query->execute()->fetchCol();
   $files = file_load_multiple($fids);
-  $files = array();
 
   // Hide the operations form if there are no files to operate on.
   $parent_form['options']['#access'] &= !empty($files);
@@ -199,7 +198,6 @@ function media_admin_thumbnails(&$parent_form) {
 
     foreach ($files as $file) {
       $preview = media_get_thumbnail_preview($file, TRUE);
-      if (!isset($preview['#file'])) { dpm($file); }
       $form['files'][$file->fid] = array(
         '#type' => 'checkbox',
         '#title' => '',

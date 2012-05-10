@@ -141,7 +141,6 @@ function media_variable_default($name = NULL) {
       // Browser defaults in media.browser.inc.
       'browser_viewtype_default' => 'thumbnails',
       'browser_pager_limit' => 40,
-      'browser_library_empty_message' => 'There are currently no media in this library to select.',
 
       'import_batch_size' => 20,
       'fromurl_supported_schemes' => array('http', 'https', 'ftp', 'smb', 'ftps'),
@@ -152,6 +151,9 @@ function media_variable_default($name = NULL) {
        // This is set in media_enable().  It will show a persistant dsm on every page
        // until the user runs the batch operation provided by media_admin_rebuild_types_form().
       'show_file_type_rebuild_nag' => FALSE,
+
+      // Deprecated variables no longer in use, but should still be uninstalled.
+      'browser_library_empty_message' => NULL,
     );
   }
 

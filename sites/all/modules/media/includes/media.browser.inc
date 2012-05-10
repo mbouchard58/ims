@@ -49,7 +49,14 @@ function media_browser($selected = NULL) {
   }
 
   foreach ($plugins as $key => &$plugin) {
-    $plugin += module_invoke($plugin['#module'], 'media_browser_plugin_view', $key, $params);
+    $plugin_output = module_invoke($plugin['#module'], 'media_browser_plugin_view', $key, $params);
+    if (!empty($plugin_output) && is_array($plugin_output)) {
+      $plugin += $plugin_output;
+    }
+    else {
+      unset($plugins[$key]);
+      continue;
+    }
   }
 
   // Allow modules to change the tab names or whatever else they want to change

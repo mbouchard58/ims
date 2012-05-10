@@ -205,3 +205,9 @@ function file_entity_update_7002() {
     ->condition('type', '')
     ->execute();
 }
+
+/**
+ * Register the new display formatter.
+ */
+function file_entity_update_7100() {
+}

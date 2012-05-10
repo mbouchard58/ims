@@ -12,6 +12,10 @@
  */
 require_once dirname(__FILE__) . '/file_entity.file_api.inc';
 
+// @todo Remove when http://drupal.org/node/977052 is fixed.
+require_once dirname(__FILE__) . '/file_entity.field.inc';
+
+
 /**
  * Implements hook_help().
  */
@@ -241,6 +245,30 @@ function file_entity_file_formatter_info() {
 
   return $formatters;
 }
+/**
+ * Return the label for a specific file entity view mode.
+ */
+function file_entity_view_mode_label($view_mode, $default = FALSE) {
+  $labels = file_entity_view_mode_labels();
+  return isset($labels[$view_mode]) ? $labels[$view_mode] : $default;
+}
+
+/**
+ * Return an array of available view modes for file entities.
+ */
+function file_entity_view_mode_labels() {
+  $labels = &drupal_static(__FUNCTION__);
+
+  if (!isset($options)) {
+    $entity_info = entity_get_info('file');
+    $labels = array('default' => t('Default'));
+    foreach ($entity_info['view modes'] as $machine_name => $mode) {
+      $labels[$machine_name] = $mode['label'];
+    }
+  }
+
+  return $labels;
+}
 
 /**
  * Implements hook_file_formatter_FORMATTER_view().
@@ -327,7 +355,7 @@ function file_entity_file_formatter_file_field_settings($form, &$form_state, $se
 function file_entity_file_formatter_file_image_view($file, $display, $langcode) {
   // Prevent PHP notices when trying to read empty files.
   // @see http://drupal.org/node/681042
-  if (!filesize($file->uri)) {
+  if (!$file->filesize) {
     return;
   }
 
