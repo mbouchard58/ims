@@ -3,29 +3,65 @@
 /**
 * Custom code for GSLIS IMS app
 * @file
-* Specifies rules for restricting user registration based on email domains.
+* Specifies rules for restricting student user registration based on email addr found in datatel student table
+* If not a simmons.edu domain, assume supervisor.  Check domain in Org table.
 */
 /**
 * Implements hook_form_FORM_ID_alter().
 **/
  function ims_form_user_register_form_alter(&$form, &$form_state) {
   global $user;
+  $submit_functions = array();
 
  //kpr($user, $return = FALSE, $name = NULL);
 
   $t_role = "administrator";
 
   // allow administrator to circumvent extra validation
-  if (!in_array($t_role, $user->roles)) {
+  // if (!in_array($t_role, $user->roles)) {
     // this adds your custom validation function to the form validation array
     $form['#validate'][] = 'ims_user_register_validation';
-  }
+  // }
+
+  // additional submit function for adding profile2
+  $submit_functions = $form['#submit'];
+  // make sure it's at the top of the list
+  array_unshift($submit_functions, 'ims_user_submit');
+  $form['#submit'] = $submit_functions;
+  
  }
+
+/**
+ * Implements hook_user_presave().
+ */
+function ims_user_presave(&$edit, $account, $category) {
+  // only assign role of student or supervisor on new accounts
+  if (isset($account->is_new) && !empty($account->is_new)) {
+    $user_roles = user_roles(TRUE);
+    $roles_to_add = array();
+
+    // Make sure the roles key exists.
+    if (!isset($edit['roles'])) {
+      $edit['roles'] = array();
+    }
+
+    $t_role = array_filter(variable_get('ims_assigned_role', array()));
+    if (!empty($t_role)) {
+      $roles_to_add = array_intersect($user_roles, $t_role); 
+
+      // Add in the new roles to override the current roles.
+      $edit['roles'] = $roles_to_add + $edit['roles'];
+    }
+  }
+}
 
 function ims_user_register_validation($form, &$form_state) {
 
-  // Schools
-  $schoolDomains = array('simmons.edu', 'uwm.edu', 'ucl.ac.uk', 'miun.se', 'nyu.edu');
+  // look into making the literal a constant and have all constants in a .inc 
+  $schoolDomains = 'simmons.edu';
+
+  //clear out assigned role for next user
+  variable_set('ims_assigned_role', array());
 
   // Get domain
   $email = $form_state['values']['mail'];
@@ -33,10 +69,74 @@ function ims_user_register_validation($form, &$form_state) {
   $emailLength = strlen($email);
   $domain = substr($email, $splitIndex, $emailLength);
 
-  // Error if not legitimate domain
-  if ( !in_array($domain, $schoolDomains) ) {
-    form_set_error('mail', t('Invalid email address. Please use an email address from Simmons or a partner institution.'));
+  $entity_type = "node";
+
+  if (($domain == $schoolDomains) ) {
+    // we've got a Simmons student (Simmons supervisors need not register)
+   
+    $bundle = "student";
+    $field_name = "field_st_email";
+    $value = $email;
+    
+    if (tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'value')) {
+      //Create a profile2 record for them now?
+      //set ims_assigned_role to student; used by ims_user_presave
+      variable_set('ims_assigned_role', array('student'));
+    }
+    else {
+       form_set_error('mail', t('Sorry but you don\'t appear to be registered for an internship course this semesters. Send email to imsadmin@simmons.edu if you have questions.'));
+    }
+
   }
+  else {
+   // we've got a potential supervisor, check org table for domain match
+   // is it doesn't match, then the user may not register
+    $bundle = "org_profile";
+    $field_name = "field_org_email";
+    $value = $domain;
+    
+    if (tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'value')) {
+      // Create a supervisor profile for them?
+      // Set the role to supervisor?
+      //set ims_assigned_role to supervisor; used by ims_user_presave
+      variable_set('ims_assigned_role', array('supervisor'));
+    }
+    else {
+      form_set_error('mail', t('Sorry but we cannot register you with that email address. Send email to imsadmin@simmons.edu if you have questions.'));
+    }
+  }
+}
+/**
+ * additional submit function for adding a profile2 profile
+ */
+function ims_user_submit($form, &$form_state) {
+// create profile object
+  $profile = profile_create(array('user' => $account, 'type' => 'main'));
+
+  // populate profile fields
+  $profile->field_firstname['und'][0]['value'] = 'John';
+  $profile->field_lastname['und'][0]['value'] = 'Smith';
+  $profile->field_gender['und'][0]['value'] = 'M';
+
+  // save profile
+  profile2_save($profile);
+}
+/**
+ * implements hook_views_api().
+ */
+function ims_views_api() {
+  return array('api' => '3.0');
+}
+/**
+ * Implements hook_views_default_views().
+ */
+function ims_views_default_views() {
+  $path = './' . drupal_get_path('module', 'ims') . '/views/*.inc';
+  $views = array();
+  foreach (glob($path) as $views_filename) {
+    require_once($views_filename);
+  }
+  return $views;
 }
 /**
 * @file

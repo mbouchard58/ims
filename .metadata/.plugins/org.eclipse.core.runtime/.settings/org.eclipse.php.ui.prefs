@@ -1,0 +1,6 @@
+#Mon May 14 17:36:01 EDT 2012
+useAnnotationsPrefPage=true
+eclipse.preferences.version=1
+org.eclipse.php.core.workspaceDefaultLocale=en_US
+useQuickDiffPrefPage=true
+org.eclipse.php.ui.text.custom_code_templates=<?xml version\="1.0" encoding\="UTF-8" standalone\="no"?><templates/>
