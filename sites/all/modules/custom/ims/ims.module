@@ -11,7 +11,6 @@
 **/
  function ims_form_user_register_form_alter(&$form, &$form_state) {
   global $user;
-  $submit_functions = array();
 
  //kpr($user, $return = FALSE, $name = NULL);
 
@@ -24,12 +23,22 @@
   // }
 
   // additional submit function for adding profile2
-  $submit_functions = $form['#submit'];
-  // make sure it's at the top of the list
-  array_unshift($submit_functions, 'ims_user_submit');
-  $form['#submit'] = $submit_functions;
+  $form['#submit'][] = 'ims_user_submit';
   
  }
+
+/**
+ * Implements hook_node_view().
+
+function ims_node_view($node, $view_mode, $langcode) {
+
+ kpr($node, $return = FALSE, $name = NULL);
+
+ for ($count = 0; $count < 2; $count++) {
+  var_dump($count);
+ }
+}
+*/
 
 /**
  * Implements hook_user_presave().
@@ -95,31 +104,42 @@ function ims_user_register_validation($form, &$form_state) {
     $field_name = "field_org_email";
     $value = $domain;
     
-    if (tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'value')) {
-      // Create a supervisor profile for them?
-      // Set the role to supervisor?
+    // returns org id (nid of node of content type organization)
+    $oid = tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'value');
+    if (!empty($oid)) {
       //set ims_assigned_role to supervisor; used by ims_user_presave
-      variable_set('ims_assigned_role', array('supervisor'));
+      variable_set('ims_assigned_role', array('supervisor', $oid));
     }
     else {
       form_set_error('mail', t('Sorry but we cannot register you with that email address. Send email to imsadmin@simmons.edu if you have questions.'));
     }
   }
 }
+/*
+function ims_form_alter(&$form, &$form_state, $formID) {
+  dpm($form, $formID);
+}
+*/
+
 /**
  * additional submit function for adding a profile2 profile
  */
 function ims_user_submit($form, &$form_state) {
-// create profile object
-  $profile = profile_create(array('user' => $account, 'type' => 'main'));
+  $t_role = array();
+  $t_role = variable_get('ims_assigned_role', array());
 
-  // populate profile fields
-  $profile->field_firstname['und'][0]['value'] = 'John';
-  $profile->field_lastname['und'][0]['value'] = 'Smith';
-  $profile->field_gender['und'][0]['value'] = 'M';
+  if (in_array('supervisor', $t_role)) {
+    $uid = $form_state['values']['uid'];
+    // create profile object
+    $profile = profile_create(array('user' => $uid, 'type' => 'supervisor'));
 
-  // save profile
-  profile2_save($profile);
+    // populate profile fields
+    $profile->field_sup_org[LANGUAGE_NONE][0]['target_id'] = $t_role[1]; //stored by variable_set in validation
+    $profile->field_sup_email[LANGUAGE_NONE][0]['value'] = $form_state['values']['mail']; 
+
+    // save profile
+    profile2_save($profile);
+  }
 }
 /**
  * implements hook_views_api().
