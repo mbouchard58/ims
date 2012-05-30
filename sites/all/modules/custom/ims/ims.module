@@ -214,7 +214,7 @@ function ims_views_query_alter(&$view, &$query) {
   global $user;
 
   //dpm($view);
-  dpm($query);
+  //dpm($query);
  
   if ($view->name != 'internships') {
    return;
