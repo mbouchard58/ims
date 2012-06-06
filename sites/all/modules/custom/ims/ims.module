@@ -3,14 +3,14 @@
 /*
  * Custom code for GSLIS IMS app
  */
-/* 
+/*
  * quick way to display formID; will be commented most of the time 
 
 function ims_form_alter(&$form, &$form_state, $formID) {
   dpm($form);
   //dpm($form_state);
 }
-*/
+ */
 /**
 * @file
 * If logged in user is a supervisor, then set defaults to some fields in the internship node.
@@ -57,6 +57,59 @@ function ims_form_alter(&$form, &$form_state, $formID) {
 }
 /**
 * @file
+* If logged in user is a student, then set defaults to some fields in the choice node.
+* Set the title and set the semester to the active semester
+*/
+/* Implements hook_form_FORM_ID_alter(). */
+ function ims_form_internship_choice_node_form_alter(&$form, &$form_state) {
+  global $user;
+
+  $t_role = "student";
+  $form['#validate'][] = 'ims_internship_choice_validation';
+  
+  // only set default values for students and when she is creating a new choice (nid not set)
+  if (in_array($t_role, $user->roles) && $form['nid']['#value'] == NULL) {
+    // get the student profile
+    $profile_values = profile2_load_by_user($user->uid);
+    
+    if (!empty($profile_values)) {
+      // get the active semester
+      //get vocabulary ID for "Semesters" vocabulary
+      // we only want the active semester
+      $vid = taxonomy_vocabulary_machine_name_load("semesters")->vid;
+
+      //get all the terms in the vocabulary. there should only be a few
+      $terms = taxonomy_get_tree($vid, $parent = 0, $max_depth = NULL, $load_entities = TRUE);
+      
+      foreach ($terms as $term) {
+        // find the active semester
+        if ($term->field_tax_sem_active['und'][0]['value'] == '1') {
+          $form['field_ch_semester']['und']['#default_value'] = array($term->tid);
+          break;
+        }
+      }
+      $t_node = $form['#node'];
+      $t_node_id = $t_node->field_ch_internship['und'][0]['target_id'];
+      $int_node = node_load($t_node_id);
+
+      $std_profile = $profile_values['student_profile'];
+      
+      $dTitle = (string) $int_node->title;
+      $dTitle .= '-';
+      $dTitle .= (string) $std_profile->field_stp_fname['und'][0]['value'];
+      $dTitle .= ' ';
+      $dTitle .= (string) $std_profile->field_stp_lname['und'][0]['value'];
+      $dTitle .= ' (';
+      $dTitle .= (string) $user->name;
+      $dTitle .= ')';
+      
+      $form['title']['#default_value'] = $dTitle;         
+      $form['field_ch_student']['und']['#default_value'] = array($std_profile->pid);
+    }
+  }
+}
+/**
+* @file
 * Specifies rules for restricting student user registration based on email addr found in datatel student table
 * If not a simmons.edu domain, assume supervisor.  Check domain in Org table.
 */
@@ -80,19 +133,25 @@ function ims_form_alter(&$form, &$form_state, $formID) {
   $form['#submit'][] = 'ims_user_submit';
   
  }
-
-/**
- * Implements hook_node_view().
-
-function ims_node_view($node, $view_mode, $langcode) {
-
- kpr($node, $return = FALSE, $name = NULL);
-
- for ($count = 0; $count < 2; $count++) {
-  var_dump($count);
+ function ims_internship_choice_validation(&$form, &$form_state) {
+  $view_name = "student_choices";
+  $display_id = "block";
+  $results = views_get_view_result($view_name, $display_id);
+  dpm($results);
+  dpm($form);
+  
+  $t_rank = $form_state['values']['field_ch_rank']['und'][0]['value'];
+  
+  if (count($results) > 2){
+   form_set_error('student choice', t('You have already have made three choices.'));
+  }
+  foreach ($results as $result){
+     if ($t_rank == $result->field_field_ch_rank[0]['raw']['value']) {
+      form_set_error('student choice', t('You already have a choice of rank ' . $t_rank . '.'));
+      break;
+     } 
+  }
  }
-}
-*/
 
 /**
  * Implements hook_user_presave().
