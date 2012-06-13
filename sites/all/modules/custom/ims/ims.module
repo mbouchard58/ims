@@ -8,53 +8,10 @@
 
 function ims_form_alter(&$form, &$form_state, $formID) {
   dpm($form);
-  //dpm($form_state);
+  dpm($form_state);
 }
  */
-/**
-* @file
-* If logged in user is a supervisor, then set defaults to some fields in the internship node.
-* Also if supervisor, set the semester to the active semester
-*/
-/* Implements hook_form_FORM_ID_alter(). */
- function ims_form_internship_node_form_alter(&$form, &$form_state) {
-  global $user;
 
-  //kpr($user, $return = FALSE, $name = NULL);
-
-  $t_role = "supervisor";
-
-  // only set default values for supervisors and when she is creating a new internship (nid not set)
-  if (in_array($t_role, $user->roles) && $form['nid']['#value'] == NULL) {
-    // get the supervisor profile
-    $profile_values = profile2_load_by_user($user->uid);
-    
-    if (!empty($profile_values)) {
-      // get the active semester
-      //get vocabulary ID for "Semesters" vocabulary
-      // we only want the active semester
-      $vid = taxonomy_vocabulary_machine_name_load("semesters")->vid;
-
-      //get all the terms in the vocabulary. there should only be a few
-      $terms = taxonomy_get_tree($vid, $parent = 0, $max_depth = NULL, $load_entities = TRUE);
-      
-      foreach ($terms as $term) {
-        // find the active semester
-        if ($term->field_tax_sem_active['und'][0]['value'] == '1') {
-          $form['field_int_semester']['und']['#default_value'] = array($term->tid);
-          break;
-        }
-      }
-      $super_profile = $profile_values['supervisor'];
-      
-      $form['field_int_org_id']['und']['#default_value'] = array($super_profile->field_sup_org['und'][0]['target_id']);     
-      $form['field_int_sup_name']['und'][0]['value']['#default_value'] = $super_profile->field_sup_name['und'][0]['value'];
-      $form['field_int_sup_phone']['und'][0]['value']['#default_value'] = $super_profile->field_sup_phone['und'][0]['value'];
-      $form['field_int_sup_email']['und'][0]['value']['#default_value'] = $super_profile->field_sup_email['und'][0]['value'];
-      //dpm($form);
-    }
-  }
-}
 /**
 * @file
 * If logged in user is a student, then set defaults to some fields in the choice node.
@@ -110,6 +67,57 @@ function ims_form_alter(&$form, &$form_state, $formID) {
 }
 /**
 * @file
+* If logged in user is a supervisor, then set defaults to some fields in the internship node.
+* Also if supervisor, set the semester to the active semester
+*/
+/* Implements hook_form_FORM_ID_alter(). */
+ function ims_form_internship_node_form_alter(&$form, &$form_state) {
+  global $user;
+
+  //kpr($user, $return = FALSE, $name = NULL);
+
+  $t_role = "supervisor";
+
+  // only set default values for supervisors and when she is creating a new internship (nid not set)
+  if (in_array($t_role, $user->roles) && $form['nid']['#value'] == NULL) {
+    // get the supervisor profile
+    $profile_values = profile2_load_by_user($user->uid);
+    
+    if (!empty($profile_values)) {
+      // get the active semester
+      //get vocabulary ID for "Semesters" vocabulary
+      // we only want the active semester
+      $vid = taxonomy_vocabulary_machine_name_load("semesters")->vid;
+
+      //get all the terms in the vocabulary. there should only be a few
+      $terms = taxonomy_get_tree($vid, $parent = 0, $max_depth = NULL, $load_entities = TRUE);
+      
+      foreach ($terms as $term) {
+        // find the active semester
+        if ($term->field_tax_sem_active['und'][0]['value'] == '1') {
+          $form['field_int_semester']['und']['#default_value'] = array($term->tid);
+          break;
+        }
+      }
+      $super_profile = $profile_values['supervisor'];
+      
+      $form['field_int_org_id']['und']['#default_value'] = array($super_profile->field_sup_org['und'][0]['target_id']);     
+      $form['field_int_sup_name']['und'][0]['value']['#default_value'] = $super_profile->field_sup_name['und'][0]['value'];
+      $form['field_int_sup_phone']['und'][0]['value']['#default_value'] = $super_profile->field_sup_phone['und'][0]['value'];
+      $form['field_int_sup_email']['und'][0]['value']['#default_value'] = $super_profile->field_sup_email['und'][0]['value'];
+      //dpm($form);
+    }
+  }
+  else {
+    // this adds your custom validation function to the form validation array
+    $form['#validate'][] = 'ims_internship_node_validation';
+
+    // additional submit function for adding profile2
+    $form['#submit'][] = 'ims_internship_node_submit';
+  }
+}
+/**
+* @file
 * Specifies rules for restricting student user registration based on email addr found in datatel student table
 * If not a simmons.edu domain, assume supervisor.  Check domain in Org table.
 */
@@ -119,40 +127,83 @@ function ims_form_alter(&$form, &$form_state, $formID) {
  function ims_form_user_register_form_alter(&$form, &$form_state) {
   global $user;
 
- //kpr($user, $return = FALSE, $name = NULL);
-
   $t_role = "administrator";
 
   // allow administrator to circumvent extra validation
   if (!in_array($t_role, $user->roles)) {
     // this adds your custom validation function to the form validation array
     $form['#validate'][] = 'ims_user_register_validation';
-  }
-
-  // additional submit function for adding profile2
-  $form['#submit'][] = 'ims_user_submit';
-  
+    // additional submit function for adding profile2
+    $form['#submit'][] = 'ims_user_submit';
+  } 
  }
- function ims_internship_choice_validation(&$form, &$form_state) {
+ function ims_internship_choice_validation(&$form, &$form_state) { 
+  //grab the rank the student had just entered
+  $t_rank = $form_state['values']['field_ch_rank']['und'][0]['value'];
+  //grab the nid of the internship the student is attempting to choose
+  $t_internship_id = $form_state['values']['field_ch_internship']['und'][0]['target_id'];
+  
+  // execute the Student Choices view. it will return all of the choices a student has made so far
+  // the view uses the logged in user's uid as context
   $view_name = "student_choices";
   $display_id = "block";
   $results = views_get_view_result($view_name, $display_id);
-  dpm($results);
-  dpm($form);
   
-  $t_rank = $form_state['values']['field_ch_rank']['und'][0]['value'];
+  // we have one set of validations for adding new choices and another for editing existing choices
+  if ($form['nid']['#value'] == NULL) {
+    //check to see how many choices this student has already made
+    if (count($results) > 2){
+     form_set_error('student choice', t('You have already have made three choices.'));
+    }
   
-  if (count($results) > 2){
-   form_set_error('student choice', t('You have already have made three choices.'));
+    // if the student has choices already, make sure she doesn't use the same rank again
+    // or she doesn't pick the same internship twice
+    if (count($results) > 0) {
+      foreach ($results as $result){
+        if ($t_rank == $result->field_field_ch_rank[0]['raw']['value']) {
+          form_set_error('student choice', t('You already have a choice of rank ' . $t_rank . '.'));
+          break;
+        } 
+        if ($t_internship_id == $result->node_field_data_field_ch_internship_nid) {
+          form_set_error('student choice', t('You already have chosen this internship.'));
+          break;
+        }
+      }
+    }
   }
-  foreach ($results as $result){
-     if ($t_rank == $result->field_field_ch_rank[0]['raw']['value']) {
-      form_set_error('student choice', t('You already have a choice of rank ' . $t_rank . '.'));
-      break;
-     } 
+  // student is editing her choices
+  else {
+    foreach ($results as $result) {
+     // if the student is changing the current rank to a rank she has chosen before but for a different internship
+     // then give that internship the old rank from this internship
+     if (($t_internship_id != $result->node_field_data_field_ch_internship_nid) && 
+        ($t_rank == $result->field_field_ch_rank[0]['raw']['value'])) {
+         $t_ch_nid = $result->field_ch_student_profile_nid;
+         $t_ch_node = node_load($t_ch_nid);
+         $arg0 = $form_state['build_info']['args'][0];
+         $t_ch_node->field_ch_rank['und'][0]['value'] = $arg0->field_ch_rank['und'][0]['value'];
+         node_save($t_ch_node);
+     }
+    }
   }
  }
-
+ function ims_internship_node_submit(&$form, &$form_state) {
+  //increment or decrement chosen on internship node
+  //write assignment to student profile and potentially unassign one.
+ if (!empty($form->field_int_assignment['und']['#default_value']) &&
+     ($form->field_int_assignment['und']['#default_value'][0] != $t_arg0->field_int_assignment['und'][0]['target_id'])){
+    
+  }
+ }
+ function ims_internship_node_validation(&$form, &$form_state) {
+  $t_arg0 = $form_state['build_info']['args'][0];
+  // check to see if the Internship assignment has been changed
+  // what happens if the field goes from assigned to unassigned?
+  if (!empty($form->field_int_assignment['und']['#default_value']) &&
+     ($form->field_int_assignment['und']['#default_value'][0] != $t_arg0->field_int_assignment['und'][0]['target_id'])){
+    
+  }
+ }
 /**
  * Implements hook_user_presave().
  */
@@ -177,7 +228,7 @@ function ims_user_presave(&$edit, $account, $category) {
   }
 }
 
-function ims_user_register_validation($form, &$form_state) {
+function ims_user_register_validation(&$form, &$form_state) {
 
   // look into making the literal a constant and have all constants in a .inc 
   $schoolDomains = 'simmons.edu';
@@ -275,24 +326,35 @@ function ims_views_query_alter(&$view, &$query) {
   //dpm($view);
   //dpm($query);
  
-  if ($view->name != 'internships') {
-   return;
+  switch ($view->name) {
+   case 'internships':
+     $t_role = "student";
+
+     // only alter the query for students
+     if (in_array($t_role, $user->roles)) {
+      // get the student profile
+      $profile_values = profile2_load_by_user($user->uid);
+    
+      if (!empty($profile_values)) {  
+        $student_profile = $profile_values['student_profile'];
+        // set the course condition in the view to the course in which the student is enrolled
+        $query->where[1]['conditions'][2]['value'][0] = $student_profile->field_stp_course['und'][0]['tid'];     
+      }
+     }
+     break;
+   case 'unassigned_students':
+     //$query->where[1]['conditions'][1]['value'][0] = $student_profile->field_stp_course['und'][0]['tid'];
+     $query->where[0]['conditions'][1] = array();
+     $query->where[0]['conditions'][1]['field'] = 'field_data_field_stp_assignment.field_stp_assignment_target_id';
+     $query->where[0]['conditions'][1]['value'] = NULL;
+     $query->where[0]['conditions'][1]['operator'] = 'IS NULL';
+     $query->where[0]['type'] = 'OR';
+     break;
+   default:
+     break;
   }
   
-  $t_role = "student";
-
-  // only alter the query for students
-  if (in_array($t_role, $user->roles)) {
-    // get the student profile
-    $profile_values = profile2_load_by_user($user->uid);
-    
-    if (!empty($profile_values)) {
-     
-      $student_profile = $profile_values['student_profile'];
-      // set the course condition in the view to the course in which the student is enrolled
-      $query->where[1]['conditions'][2]['value'][0] = $student_profile->field_stp_course['und'][0]['tid'];     
-    }
-  }
+  
 }
 /**
 * @file

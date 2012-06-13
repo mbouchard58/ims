@@ -1,0 +1,132 @@
+<?php
+
+/**
+ * Implements hook_permission().
+ */
+function entity_view_mode_permission() {
+  return array(
+    'administer entity view modes' => array(
+      'title' => t('Add, edit and delete custom entity view modes.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ */
+function entity_view_mode_entity_info_alter(&$info) {
+  foreach (variable_get('entity_view_modes', array()) as $entity_type => $view_modes) {
+    if (isset($info[$entity_type]['view modes'])) {
+      $info[$entity_type]['view modes'] += $view_modes;
+    }
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function entity_view_mode_menu() {
+  $items['admin/config/system/entity-view-modes'] = array(
+    'title' => 'Entity view modes',
+    'page callback' => 'entity_view_mode_list',
+    'access arguments' => array('administer entity view modes'),
+    'file' => 'entity_view_mode.admin.inc',
+  );
+  $items['admin/config/system/entity-view-modes/add/%'] = array(
+    'title' => 'Add view mode',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('entity_view_mode_edit_form', 5),
+    'access arguments' => array('administer entity view modes'),
+    'file' => 'entity_view_mode.admin.inc',
+  );
+  $items['admin/config/system/entity-view-modes/edit/%/%'] = array(
+    'title' => 'Edit view mode',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('entity_view_mode_edit_form', 5, 6),
+    'access arguments' => array('administer entity view modes'),
+    'file' => 'entity_view_mode.admin.inc',
+  );
+  $items['admin/config/system/entity-view-modes/delete/%/%'] = array(
+    'title' => 'Edit view mode',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('entity_view_mode_delete_form', 5, 6),
+    'access arguments' => array('administer entity view modes'),
+    'file' => 'entity_view_mode.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_menu_local_tasks_alter() {
+ */
+//function entity_view_mode_local_tasks_alter(&$data, $router_item, $root_path) {
+//}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+//function entity_view_mode_field_ui_display_overview_form_alter(&$form, &$form_state) {
+//}
+
+/**
+ * Load a custom entity view mode by entity type and machine name.
+ */
+function entity_view_mode_load($entity_type, $machine_name) {
+  $view_modes = variable_get('entity_view_modes', array());
+  return !empty($view_modes[$entity_type][$machine_name]) ? $view_modes[$entity_type][$machine_name] : FALSE;
+}
+
+/**
+ * Save a custom entity view mode.
+ */
+function entity_view_mode_save($entity_type, $view_mode) {
+  $existing_view_mode = !empty($view_mode['old_machine_name']) ? $view_mode['old_machine_name'] : $view_mode['machine_name'];
+
+  // Load the stored view mode, if any.
+  if (!isset($view_mode['original'])) {
+    $view_mode['original'] = entity_view_mode_load($entity_type, $existing_view_mode);
+  }
+
+  // Determine if we will be inserting a new view mode.
+  if (!isset($view_mode['is_new'])) {
+    $view_mode['is_new'] = !empty($view_mode['original']);
+  }
+
+  // Let modules modify the view mode before it is saved.
+  module_invoke_all('entity_view_mode_presave', $view_mode, $entity_type);
+
+  // Save the view mode.
+  $view_modes = variable_get('entity_view_modes', array());
+  unset($view_modes[$entity_type][$existing_view_mode]);
+  $view_modes[$entity_type][$view_mode['machine_name']] = array_intersect_key($view_mode, drupal_map_assoc(array('label'))) + array('custom settings' => FALSE);
+  variable_set('entity_view_modes', $view_modes);
+
+  // Allow modules to respond after the view mode is saved.
+  if ($view_mode['is_new']) {
+    module_invoke_all('entity_view_mode_insert', $view_mode, $entity_type);
+  }
+  else {
+    module_invoke_all('entity_view_mode_update', $view_mode, $entity_type);
+  }
+
+  // Clear internal properties.
+  unset($view_mode['original']);
+  unset($view_mode['is_new']);
+
+  // Clear the static entity info cache.
+  entity_info_cache_clear();
+}
+
+function entity_view_mode_delete($entity_type, $machine_name) {
+  if ($view_mode = entity_view_mode_load($entity_type, $machine_name)) {
+    module_invoke_all('entity_view_mode_delete', $view_mode, $entity_type);
+
+    $view_modes = variable_get('entity_view_modes', array());
+    unset($view_modes[$entity_type][$machine_name]);
+    variable_set('entity_view_modes', $view_modes);
+
+    // Clear the static entity info cache.
+    entity_info_cache_clear();
+  }
+}
