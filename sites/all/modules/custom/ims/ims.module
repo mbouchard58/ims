@@ -5,12 +5,12 @@
  */
 /*
  * quick way to display formID; will be commented most of the time 
-
+ */
 function ims_form_alter(&$form, &$form_state, $formID) {
   dpm($form);
   dpm($form_state);
 }
- */
+
 
 /**
 * @file
@@ -74,8 +74,6 @@ function ims_form_alter(&$form, &$form_state, $formID) {
  function ims_form_internship_node_form_alter(&$form, &$form_state) {
   global $user;
 
-  //kpr($user, $return = FALSE, $name = NULL);
-
   $t_role = "supervisor";
 
   // only set default values for supervisors and when she is creating a new internship (nid not set)
@@ -109,6 +107,25 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     }
   }
   else {
+    // build the student profile list for the assignment drop-down
+    $form['field_int_assignment']['und']['#options'] = array();
+    $form['field_int_assignment']['und']['#options']['_none'] = "- None -";
+    
+    $entity_type = "profile2";
+    $bundle = "student_profile";
+    $field_name = "field_stp_course";
+    $column = 'tid';
+    $value = $form['field_int_course']['und']['#default_value'][0];
+    
+    if ($value != NULL) {
+       $results = tedbow_utils_find_entities_with_field_value($entity_type, $bundle, $field_name, $value, $column);
+       
+       // $results should be a list of pids for students taking the course for which this internship is assigned
+       foreach ($results as $result) {
+         $profile_values = profile2_load_by_user($result);
+       }
+        
+       }
     // this adds your custom validation function to the form validation array
     $form['#validate'][] = 'ims_internship_node_validation';
 
@@ -343,8 +360,17 @@ function ims_views_query_alter(&$view, &$query) {
      }
      break;
    case 'unassigned_students':
-     //$query->where[1]['conditions'][1]['value'][0] = $student_profile->field_stp_course['und'][0]['tid'];
-     $query->where[0]['conditions'][1] = array();
+     // grab the node id of the internship from the WHERE clause
+     // it was passed in via a contextual filter in the view
+     $t_node_id = $query->where[0]['conditions'][0]['value'][':field_data_field_stp_assignment_field_stp_assignment_target_id'];
+     // we have the nid, get the content
+     $int_node = node_load($t_node_id);
+     
+     // we need the course to which this node is assigned to override the static filter
+     // we only want to see students who are registered for this course
+     $query->where[1]['conditions'][1]['value'] = $int_node->field_int_course['und'][0]['target_id'];
+     
+     // unfortunately there is no way to set a contextual filter to a fixed value of NULL in Views. It has to be overridden in code
      $query->where[0]['conditions'][1]['field'] = 'field_data_field_stp_assignment.field_stp_assignment_target_id';
      $query->where[0]['conditions'][1]['value'] = NULL;
      $query->where[0]['conditions'][1]['operator'] = 'IS NULL';
