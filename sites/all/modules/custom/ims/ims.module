@@ -5,12 +5,12 @@
  */
 /*
  * quick way to display formID; will be commented most of the time 
- */
+
 function ims_form_alter(&$form, &$form_state, $formID) {
   dpm($form);
   dpm($form_state);
 }
-
+ */
 
 /**
 * @file
@@ -23,6 +23,7 @@ function ims_form_alter(&$form, &$form_state, $formID) {
 
   $t_role = "student";
   $form['#validate'][] = 'ims_internship_choice_validation';
+  $form['#submit'][] = 'ims_internship_choice_submit';
   
   // only set default values for students and when she is creating a new choice (nid not set)
   if (in_array($t_role, $user->roles) && $form['nid']['#value'] == NULL) {
@@ -111,21 +112,27 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     $form['field_int_assignment']['und']['#options'] = array();
     $form['field_int_assignment']['und']['#options']['_none'] = "- None -";
     
-    $entity_type = "profile2";
-    $bundle = "student_profile";
-    $field_name = "field_stp_course";
-    $column = 'tid';
     $value = $form['field_int_course']['und']['#default_value'][0];
     
     if ($value != NULL) {
-       $results = tedbow_utils_find_entities_with_field_value($entity_type, $bundle, $field_name, $value, $column);
+      //the internship has a course so find only those students who are registered for the course
+      $entity_type = "profile2";
+      $bundle = "student_profile";
+      $field_name = "field_stp_course";
+      $column = 'tid';
+      $results = tedbow_utils_find_entities_with_field_value($entity_type, $bundle, $field_name, $value, $column);
        
-       // $results should be a list of pids for students taking the course for which this internship is assigned
-       foreach ($results as $result) {
-         $profile_values = profile2_load_by_user($result);
-       }
+      // $results should be a list of pids for students taking the course for which this internship is assigned
+      foreach ($results as $result) {
+        $student_profile = profile2_load($result);
         
-       }
+        if ((empty($student_profile->field_stp_assignment)) || 
+            ($student_profile->field_stp_assignment['und'][0]['target_id'] == $form['nid']['#value'])) {       
+          $form['field_int_assignment']['und']['#options'][$result] = $student_profile->field_stp_fname['und'][0]['value'] . " ";
+          $form['field_int_assignment']['und']['#options'][$result] .= $student_profile->field_stp_lname['und'][0]['value'];
+        }  
+      }  
+    }
     // this adds your custom validation function to the form validation array
     $form['#validate'][] = 'ims_internship_node_validation';
 
@@ -153,6 +160,43 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     // additional submit function for adding profile2
     $form['#submit'][] = 'ims_user_submit';
   } 
+ }
+ function ims_internship_choice_submit(&$form, &$form_state) { 
+  // load internship node, increment chosen and save it
+  // need to test for new choice, deleted choice (decrement chosen) or changed choice (inc and dec)
+  $t_internship_id = $form_state['values']['field_ch_internship']['und'][0]['target_id'];
+  
+  if ($form['nid']['#value'] == NULL) {
+    //new choice. get chosen and increment   
+    $t_int_node = node_load($t_internship_id);
+    if (isset($t_int_node)) {
+      $t_chosen = $t_int_node->field_int_chosen['und'][0]['value'];
+      $t_chosen++;
+      $t_int_node->field_int_chosen['und'][0]['value'] = $t_chosen;
+      
+      node_save($t_int_node);
+    }
+  }
+ 
+  // execute the Student Choices view. it will return all of the choices a student has made so far
+  // the view uses the logged in user's uid as context
+  $view_name = "student_choices";
+  $display_id = "block";  
+  $results = views_get_view_result($view_name, $display_id);
+  //grab the rank the student just entered
+  $t_rank = $form_state['values']['field_ch_rank']['und'][0]['value'];
+  foreach ($results as $result) {
+    // if the student is changing the current rank to a rank she has chosen before but for a different internship
+    // then give that internship the old rank from this internship
+    if (($t_internship_id != $result->node_field_data_field_ch_internship_nid) && 
+       ($t_rank == $result->field_field_ch_rank[0]['raw']['value'])) {
+        $t_ch_nid = $result->field_ch_student_profile_nid;
+        $t_ch_node = node_load($t_ch_nid); // load the choice node
+        $arg0 = $form_state['build_info']['args'][0];
+        $t_ch_node->field_ch_rank['und'][0]['value'] = $arg0->field_ch_rank['und'][0]['value'];
+        node_save($t_ch_node);
+    }
+  }
  }
  function ims_internship_choice_validation(&$form, &$form_state) { 
   //grab the rank the student had just entered
@@ -188,38 +232,95 @@ function ims_form_alter(&$form, &$form_state, $formID) {
       }
     }
   }
-  // student is editing her choices
-  else {
-    foreach ($results as $result) {
-     // if the student is changing the current rank to a rank she has chosen before but for a different internship
-     // then give that internship the old rank from this internship
-     if (($t_internship_id != $result->node_field_data_field_ch_internship_nid) && 
-        ($t_rank == $result->field_field_ch_rank[0]['raw']['value'])) {
-         $t_ch_nid = $result->field_ch_student_profile_nid;
-         $t_ch_node = node_load($t_ch_nid);
-         $arg0 = $form_state['build_info']['args'][0];
-         $t_ch_node->field_ch_rank['und'][0]['value'] = $arg0->field_ch_rank['und'][0]['value'];
-         node_save($t_ch_node);
-     }
-    }
-  }
+ 
  }
  function ims_internship_node_submit(&$form, &$form_state) {
-  //increment or decrement chosen on internship node
-  //write assignment to student profile and potentially unassign one.
- if (!empty($form->field_int_assignment['und']['#default_value']) &&
-     ($form->field_int_assignment['und']['#default_value'][0] != $t_arg0->field_int_assignment['und'][0]['target_id'])){
+   //unassign previously assigned students and then assign new ones
+   //$t_pre holds the list of students previously assigned; it may be empty
+   $t_args0 = $form_state['build_info']['args'][0];
+   $t_pre = $t_args0->field_int_assignment['und'];
+   
+   //$t_new holds the list of newly assigned students; it may be empty
+   $t_new = $form_state['values']['field_int_assignment']['und'];
+   
+   if (!(empty($t_pre))) {
+     ims_unassign_students($t_pre);
+   }
     
-  }
+    $t_assn = array();
+    //assign new students
+    foreach ($t_new as $t_assn) {
+      $t_pid = (int) $t_assn['target_id'];
+      
+      if ($t_pid > 0) {
+        $student_profile = profile2_load($t_pid);
+        //make sure we have a valid student profile object
+        if (!(empty($student_profile))) {
+          $student_profile->field_stp_assignment['und'][0]['target_id'] = $form_state['values']['nid'];
+          profile2_save($student_profile);
+        }
+      }     
+    }
  }
  function ims_internship_node_validation(&$form, &$form_state) {
-  $t_arg0 = $form_state['build_info']['args'][0];
-  // check to see if the Internship assignment has been changed
-  // what happens if the field goes from assigned to unassigned?
-  if (!empty($form->field_int_assignment['und']['#default_value']) &&
-     ($form->field_int_assignment['und']['#default_value'][0] != $t_arg0->field_int_assignment['und'][0]['target_id'])){
-    
+  $t_count = count($form_state['values']['field_int_assignment']['und']);
+  if ($t_count > (int) $form_state['values']['field_int_positions']['und'][0]['value']) {
+    form_set_error('mail', t('The number of students assigned may not exceed the number of positions available.'));
   }
+ }
+/**
+* @file
+* Extra deletion logic after deleting a node.
+*/
+/* Implements hook_node_delete(). */
+ function ims_node_delete($node) {
+  
+  switch ($node->type) {
+    case ('internship_choice'):
+      //we're deleting an internship choice, so we've got to load the internship and decrement chosen
+     $t_internship_id = $node->field_ch_internship['und'][0]['target_id'];
+      $t_int_node = node_load($t_internship_id);
+      //do we have a valid node?
+      if (isset($t_int_node)) {
+        $t_chosen = $t_int_node->field_int_chosen['und'][0]['value'];
+        if ($t_chosen > 0) {
+           $t_chosen--;
+           $t_int_node->field_int_chosen['und'][0]['value'] = $t_chosen;
+      
+           node_save($t_int_node);
+        }
+      }
+      break;
+    case ('internship'):
+      //we're deleting an internship. unassign all students assigned to this internship
+      $t_assignments = $node->field_int_assignment['und'];
+      
+      if (!(empty($t_assignments))) {
+        ims_unassign_students($t_assignments);
+      }
+      
+      break;
+    default:
+      break;
+  }
+ }
+/**
+* @file
+* unassign previously assigned students
+*/
+ function ims_unassign_students($assignments) {
+   foreach ($assignments as $t_assn) {
+     $t_pid = (int) $t_assn['target_id'];
+      
+     if ($t_pid > 0) {
+       $student_profile = profile2_load($t_pid);
+       //make sure we have a valid student profile object
+       if (!(empty($student_profile))) {
+          $student_profile->field_stp_assignment = array();
+          profile2_save($student_profile);
+       }
+     }
+   }
  }
 /**
  * Implements hook_user_presave().
@@ -274,7 +375,7 @@ function ims_user_register_validation(&$form, &$form_state) {
       variable_set('ims_assigned_role', array('student'));
     }
     else {
-       form_set_error('mail', t('Sorry but you don\'t appear to be registered for an internship course this semesters. Send email to imsadmin@simmons.edu if you have questions.'));
+       form_set_error('mail', t('Sorry but you don\'t appear to be registered for an internship course this semester. Send email to imsadmin@simmons.edu if you have questions.'));
     }
 
   }
@@ -359,46 +460,7 @@ function ims_views_query_alter(&$view, &$query) {
       }
      }
      break;
-   case 'unassigned_students':
-     // grab the node id of the internship from the WHERE clause
-     // it was passed in via a contextual filter in the view
-     $t_node_id = $query->where[0]['conditions'][0]['value'][':field_data_field_stp_assignment_field_stp_assignment_target_id'];
-     // we have the nid, get the content
-     $int_node = node_load($t_node_id);
-     
-     // we need the course to which this node is assigned to override the static filter
-     // we only want to see students who are registered for this course
-     $query->where[1]['conditions'][1]['value'] = $int_node->field_int_course['und'][0]['target_id'];
-     
-     // unfortunately there is no way to set a contextual filter to a fixed value of NULL in Views. It has to be overridden in code
-     $query->where[0]['conditions'][1]['field'] = 'field_data_field_stp_assignment.field_stp_assignment_target_id';
-     $query->where[0]['conditions'][1]['value'] = NULL;
-     $query->where[0]['conditions'][1]['operator'] = 'IS NULL';
-     $query->where[0]['type'] = 'OR';
-     break;
    default:
      break;
-  }
-  
-  
+  } 
 }
-/**
-* @file
-* change front page based on whether user is anonymous or authenticated
-
-function ims_menu() {
-   $items['front'] = array(
-        'page callback' => 'ims_front',
-    'access callback' => TRUE,
-   );
-   return $items;
- }
-
-// The homepage. Serves node 93 to anon and node 94 to authenticated
-function ims_front() {
-        global $user;
-        $nid = $user->uid == 0 ? 93 : 94;
-        $node = node_load($nid);
-  return node_view($node);
-}
-*/
