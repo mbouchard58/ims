@@ -3,6 +3,18 @@
 /*
  * Custom code for GSLIS IMS app
  */
+function ims_evaluation_node_submit(&$form, &$form_state) {
+  $student_profile = profile2_load($form_state['values']['field_eval_student']['und'][0]['target_id']);
+  $form_state['values']['title'] .=  (string) $student_profile->field_stp_fname['und'][0]['value'] . ' ';
+  $form_state['values']['title'] .=  (string) $student_profile->field_stp_lname['und'][0]['value'];
+
+}
+function ims_final_evaluation_node_submit(&$form, &$form_state) {
+  $student_profile = profile2_load($form_state['values']['field_fin_student']['und'][0]['target_id']);
+  $form_state['values']['title'] .=  (string) $student_profile->field_stp_fname['und'][0]['value'] . ' ';
+  $form_state['values']['title'] .=  (string) $student_profile->field_stp_lname['und'][0]['value'];
+
+}
 /*
  * quick way to display formID; will be commented most of the time 
 
@@ -11,7 +23,82 @@ function ims_form_alter(&$form, &$form_state, $formID) {
   dpm($form_state);
 }
  */
-
+/**
+* @file
+* Build the drop-down list of students from the internship node
+* Set the default supervisor name to the supervisor on the internship
+* 
+*/
+/* Implements hook_form_FORM_ID_alter(). */
+ function ims_form_evaluation_node_form_alter(&$form, &$form_state) {
+  $t_nid = $form['field_eval_internship']['und']['#default_value'][0];
+  $form['field_eval_student']['und']['#options'] = array();
+  
+  if ($t_nid) {
+    $t_int_node = node_load($t_nid);
+    if ($t_int_node) {
+     // build the drop down for the students assigned to this internship
+     foreach ($t_int_node->field_int_assignment['und'] as $t_assn) {
+       if (!empty($t_assn['target_id'])) {
+         $student_profile = profile2_load($t_assn['target_id']); 
+         if (!empty($student_profile)) {
+           $form['field_eval_student']['und']['#options'][$t_assn['target_id']] = $student_profile->field_stp_fname['und'][0]['value'] . " ";
+           $form['field_eval_student']['und']['#options'][$t_assn['target_id']] .= $student_profile->field_stp_lname['und'][0]['value'];
+         }
+       }
+       
+     }
+     // set the default title to pass validation; it will be amended in ims_evaluation_node_submit
+     $form['title']['#default_value'] = 'MSE: '. $t_int_node->title . '--';
+     // set default supervisor name
+     $form['field_eval_supervisor_name']['und'][0]['value']['#default_value'] = $t_int_node->field_int_sup_name['und'][0]['value'];
+    }
+    // need an extra submit function to set the title
+    $form['#submit'][] = 'ims_evaluation_node_submit';
+  }
+  else {
+    watchdog('Mid-semester evaluation', 'Illegal internship node ID: %nid', $t_nid);
+  }
+  
+ }
+/**
+* @file
+* Build the drop-down list of students from the internship node
+* Set the default supervisor name to the supervisor on the internship
+* 
+*/
+/* Implements hook_form_FORM_ID_alter(). */
+ function ims_form_final_evaluation_node_form_alter(&$form, &$form_state) {
+  $t_nid = $form['field_fin_internship']['und']['#default_value'][0];
+  $form['field_fin_student']['und']['#options'] = array();
+  
+  if ($t_nid) {
+    $t_int_node = node_load($t_nid);
+    if ($t_int_node) {
+     // build the drop down for the students assigned to this internship
+     foreach ($t_int_node->field_int_assignment['und'] as $t_assn) {
+       if (!empty($t_assn['target_id'])) {
+         $student_profile = profile2_load($t_assn['target_id']); 
+         if (!empty($student_profile)) {
+           $form['field_fin_student']['und']['#options'][$t_assn['target_id']] = $student_profile->field_stp_fname['und'][0]['value'] . " ";
+           $form['field_fin_student']['und']['#options'][$t_assn['target_id']] .= $student_profile->field_stp_lname['und'][0]['value'];
+         }
+       }
+       
+     }
+     // set the default title to pass validation; it will be amended in ims_evaluation_node_submit
+     $form['title']['#default_value'] = 'FE: '. $t_int_node->title . '--';
+     // set default supervisor name (shares field name with Evaluation content type)
+     $form['field_eval_supervisor_name']['und'][0]['value']['#default_value'] = $t_int_node->field_int_sup_name['und'][0]['value'];
+    }
+    // need an extra submit function to set the title
+    $form['#submit'][] = 'ims_final_evaluation_node_submit';
+  }
+  else {
+    watchdog('Final evaluation', 'Illegal internship node ID: %nid', $t_nid);
+  }
+  
+ }
 /**
 * @file
 * If logged in user is a student, then set defaults to some fields in the choice node.
@@ -23,7 +110,7 @@ function ims_form_alter(&$form, &$form_state, $formID) {
 
   $t_role = "student";
   $form['#validate'][] = 'ims_internship_choice_validation';
-  $form['#submit'][] = 'ims_internship_choice_submit';
+  $form['#submit'][] = 'ims_internship_choice_node_submit';
   
   // only set default values for students and when she is creating a new choice (nid not set)
   if (in_array($t_role, $user->roles) && $form['nid']['#value'] == NULL) {
@@ -120,16 +207,16 @@ function ims_form_alter(&$form, &$form_state, $formID) {
       $bundle = "student_profile";
       $field_name = "field_stp_course";
       $column = 'tid';
-      $results = tedbow_utils_find_entities_with_field_value($entity_type, $bundle, $field_name, $value, $column);
+      $pids = tedbow_utils_find_entities_with_field_value($entity_type, $bundle, $field_name, $value, $column);
        
       // $results should be a list of pids for students taking the course for which this internship is assigned
-      foreach ($results as $result) {
+      foreach ($pids as $pid) {
         $student_profile = profile2_load($result);
         
         if ((empty($student_profile->field_stp_assignment)) || 
             ($student_profile->field_stp_assignment['und'][0]['target_id'] == $form['nid']['#value'])) {       
-          $form['field_int_assignment']['und']['#options'][$result] = $student_profile->field_stp_fname['und'][0]['value'] . " ";
-          $form['field_int_assignment']['und']['#options'][$result] .= $student_profile->field_stp_lname['und'][0]['value'];
+          $form['field_int_assignment']['und']['#options'][$pid] = $student_profile->field_stp_fname['und'][0]['value'] . " ";
+          $form['field_int_assignment']['und']['#options'][$$pid] .= $student_profile->field_stp_lname['und'][0]['value'];
         }  
       }  
     }
@@ -161,7 +248,7 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     $form['#submit'][] = 'ims_user_submit';
   } 
  }
- function ims_internship_choice_submit(&$form, &$form_state) { 
+ function ims_internship_choice_node_submit(&$form, &$form_state) { 
   // load internship node, increment chosen and save it
   // need to test for new choice, deleted choice (decrement chosen) or changed choice (inc and dec)
   $t_internship_id = $form_state['values']['field_ch_internship']['und'][0]['target_id'];

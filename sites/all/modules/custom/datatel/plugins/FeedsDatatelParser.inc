@@ -25,7 +25,7 @@ class FeedsDatatelParser extends FeedsParser {
     //get all the terms in the vocabulary. there should only be a few
     $terms = taxonomy_get_tree($vid);
 
-    dprint_r($terms);
+    //dprint_r($terms);
 
     //dvr($terms, $return = FALSE, $name = NULL);
     // create a list of all the course names from the taxonomy tree

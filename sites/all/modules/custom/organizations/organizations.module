@@ -1,0 +1,44 @@
+<?php
+
+/**
+ * @file
+ * A module that allows you to map a Organizations feed as node items.
+ */
+
+/**
+ * Implements hook_help().
+ *
+ * Displays help and module information.
+ *
+ * @param path
+ *   Which path of the site we're using to display help
+ * @param arg
+ *   Array that holds the current path as returned from arg() function
+ */
+function organizations_help($path, $arg) {
+  switch ($path) {
+    case "admin/help#organizations":
+      return '<p>' . t("Import a Organizations file into Drupal as the content type of your choice. You'll need the location of a valid Organizations xml file.") . '</p>';
+      break;
+  }
+}
+
+/**
+ * Implements hook_feeds_plugins().
+ */
+function organizations_feeds_plugins() {
+  $info = array();
+
+  $info['FeedsOrganizationsParser'] = array(
+    'name' => 'Organizations Feeds parser',
+    'description' => 'Parses a Organizations XML file.',
+    'handler' => array(
+      'parent' => 'FeedsParser',
+      'class' => 'FeedsOrganizationsParser',
+      'file' => 'plugins/FeedsOrganizationsParser.inc',
+      'path' => drupal_get_path('module', 'organizations'),
+    ),
+  );
+
+  return $info;
+}
