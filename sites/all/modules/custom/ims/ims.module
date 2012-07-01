@@ -241,12 +241,12 @@ function ims_form_alter(&$form, &$form_state, $formID) {
   $t_role = "administrator";
 
   // allow administrator to circumvent extra validation
-  if (!in_array($t_role, $user->roles)) {
+ // if (!in_array($t_role, $user->roles)) {
     // this adds your custom validation function to the form validation array
     $form['#validate'][] = 'ims_user_register_validation';
     // additional submit function for adding profile2
     $form['#submit'][] = 'ims_user_submit';
-  } 
+  //} 
  }
  function ims_internship_choice_node_submit(&$form, &$form_state) { 
   // load internship node, increment chosen and save it
@@ -496,12 +496,51 @@ function ims_user_submit($form, &$form_state) {
     // create profile object
     $profile = profile_create(array('user' => $uid, 'type' => 'supervisor'));
 
-    // populate profile fields
+    // assign organization ID, store in $t_role[1] at validation time
     $profile->field_sup_org[LANGUAGE_NONE][0]['target_id'] = $t_role[1]; //stored by variable_set in validation
+    // assign email address
     $profile->field_sup_email[LANGUAGE_NONE][0]['value'] = $form_state['values']['mail']; 
 
     // save profile
     profile2_save($profile);
+    // logic copies from content_access.module and content_access.admin.inc
+    // give this supervisor permission to edit her organization
+    // requires content_access and acl modules
+    $node = node_load($t_role[1]);
+    
+    //get the current settings 
+    $settings = content_access_get_per_node_settings($node);
+     // Save per-node settings.
+    content_access_save_per_node_settings($node, $settings);
+    
+    // we only care about one operation, update
+    $op = 'update';
+    
+    //returns an acl_id (it won't exist so one is created)
+    $acl_id = content_access_get_acl_id($node, $op);
+    
+    //store it
+    $form_state['values']['acl'][$op]['acl_id'] = $acl_id;
+    $form_state['values']['acl'][$op]['deletions'][$uid] = 0;
+    $form_state['values']['acl'][$op]['delete_button'] = 'Remove Checked';
+    $form_state['values']['acl'][$op]['add'] = '';
+    $form_state['values']['acl'][$op]['add_button'] = 'Add User';
+    
+    //create a serialized user list for acl_save_form (see sites/all/modules/acl/acl.module)
+    $user_list[$uid] = $form_state['values']['name'];
+    $form_state['values']['acl'][$op]['user_list'] = serialize($user_list);
+    
+    // following if statement is for robustness. The acl module MUST be enabled
+    if (module_exists('acl')) {
+       ims_acl_save($form_state['values']['acl'][$op]);
+       module_invoke_all('user_acl', $settings);
+    }
+
+    // from the content_access.module and content_access.admin.inc
+    // Apply new settings.
+    node_access_acquire_grants($node);
+
+    module_invoke_all('per_node', $settings);
   }
 }
 /**
@@ -550,4 +589,30 @@ function ims_views_query_alter(&$view, &$query) {
    default:
      break;
   } 
+}
+/**
+ * copy of acl_save_form
+ * since we don't have a form, we're calling a copy
+ */
+function ims_acl_save($form, $priority = NULL) {
+  $users = unserialize($form['user_list']);
+  db_delete('acl_user')
+    ->condition('acl_id', $form['acl_id'])
+    ->execute();
+  foreach ($users as $uid => $name) {
+    db_insert('acl_user')
+    ->fields(array(
+      'acl_id' => $form['acl_id'],
+      'uid' => $uid,
+    ))
+    ->execute();
+  }
+  if (isset($priority)) {
+    db_update('acl_node')
+      ->fields(array(
+        'priority' => $priority,
+      ))
+      ->condition('acl_id', $form['acl_id'])
+      ->execute();
+  }
 }
