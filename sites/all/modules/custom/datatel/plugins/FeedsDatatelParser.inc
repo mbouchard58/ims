@@ -34,6 +34,8 @@ class FeedsDatatelParser extends FeedsParser {
       $termNames[] = $term->name;
     }
 
+    $active_tid = ims_get_active_semester();
+    
     $xml = new SimpleXMLElement($fetcher_result->getRaw());
     $result = new FeedsParserResult();
 
@@ -58,6 +60,7 @@ class FeedsDatatelParser extends FeedsParser {
           $student['email'] = (string) $regItem->demographics['simmons_email'];
           $student['course_name'] = $courseName;
           $student['section_no'] = $secNo;
+          $student['semester'] = $active_tid;
           $result->items[] = $student;
           unset($student);
 
@@ -114,6 +117,10 @@ class FeedsDatatelParser extends FeedsParser {
       'section_no' => array(
         'name' => t('Section Number'),
         'description' => t('The section number for the course in which the student is enrolled.'),
+      ),
+      'semester' => array(
+        'name' => t('Semester ID'),
+        'description' => t('The term ID from the Semesters vocabulary.'),
       ),
     )+ parent::getMappingSources();
   }

@@ -119,20 +119,11 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     
     if (!empty($profile_values)) {
       // get the active semester
-      //get vocabulary ID for "Semesters" vocabulary
-      // we only want the active semester
-      $vid = taxonomy_vocabulary_machine_name_load("semesters")->vid;
-
-      //get all the terms in the vocabulary. there should only be a few
-      $terms = taxonomy_get_tree($vid, $parent = 0, $max_depth = NULL, $load_entities = TRUE);
-      
-      foreach ($terms as $term) {
-        // find the active semester
-        if ($term->field_tax_sem_active['und'][0]['value'] == '1') {
-          $form['field_ch_semester']['und']['#default_value'] = array($term->tid);
-          break;
-        }
+      $tid = ims_get_active_semester();
+      if (isset($tid)){
+        $form['field_ch_semester']['und']['#default_value'] = array($tid);
       }
+      
       $t_node = $form['#node'];
       $t_node_id = $t_node->field_ch_internship['und'][0]['target_id'];
       $int_node = node_load($t_node_id);
@@ -171,19 +162,9 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     
     if (!empty($profile_values)) {
       // get the active semester
-      //get vocabulary ID for "Semesters" vocabulary
-      // we only want the active semester
-      $vid = taxonomy_vocabulary_machine_name_load("semesters")->vid;
-
-      //get all the terms in the vocabulary. there should only be a few
-      $terms = taxonomy_get_tree($vid, $parent = 0, $max_depth = NULL, $load_entities = TRUE);
-      
-      foreach ($terms as $term) {
-        // find the active semester
-        if ($term->field_tax_sem_active['und'][0]['value'] == '1') {
-          $form['field_int_semester']['und']['#default_value'] = array($term->tid);
-          break;
-        }
+      $tid = ims_get_active_semester();
+      if (isset($tid)){
+          $form['field_int_semester']['und']['#default_value'] = array($tid);   
       }
       $super_profile = $profile_values['supervisor'];
       
@@ -203,11 +184,13 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     
     if ($value != NULL) {
       //the internship has a course so find only those students who are registered for the course
+      /*
       $entity_type = "profile2";
       $bundle = "student_profile";
       $field_name = "field_stp_course";
       $column = 'tid';
       $pids = tedbow_utils_find_entities_with_field_value($entity_type, $bundle, $field_name, $value, $column);
+      */
        
       // $results should be a list of pids for students taking the course for which this internship is assigned
       foreach ($pids as $pid) {
@@ -284,6 +267,28 @@ function ims_form_alter(&$form, &$form_state, $formID) {
         node_save($t_ch_node);
     }
   }
+ }
+ /*
+  * Return the active semester
+  */
+ function ims_get_active_semester() {
+   $tid = NULL;
+   
+   //get vocabulary ID for "Semesters" vocabulary
+   // we only want the active semester
+   $vid = taxonomy_vocabulary_machine_name_load("semesters")->vid;
+
+   //get all the terms in the vocabulary. there should only be a few
+   $terms = taxonomy_get_tree($vid, $parent = 0, $max_depth = NULL, $load_entities = TRUE);
+      
+   foreach ($terms as $term) {
+     // find the active semester
+     if ($term->field_tax_sem_active['und'][0]['value'] == '1') {
+       $tid = $term->tid;
+       break;
+     }
+   }
+   return $tid;
  }
  function ims_internship_choice_validation(&$form, &$form_state) { 
   //grab the rank the student had just entered
@@ -456,10 +461,11 @@ function ims_user_register_validation(&$form, &$form_state) {
     $field_name = "field_st_email";
     $value = $email;
     
-    if (tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'value')) {
-      //Create a profile2 record for them now?
+    $oid = tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'value'); 
+    if (!empty($oid)) {      
       //set ims_assigned_role to student; used by ims_user_presave
-      variable_set('ims_assigned_role', array('student'));
+      //also store object ID of Student; used by ims_user_submit
+      variable_set('ims_assigned_role', array('student', $oid));
     }
     else {
        form_set_error('mail', t('Sorry but you don\'t appear to be registered for an internship course this semester. Send email to imsadmin@simmons.edu if you have questions.'));
@@ -491,18 +497,21 @@ function ims_user_submit($form, &$form_state) {
   $t_role = array();
   $t_role = variable_get('ims_assigned_role', array());
 
-  if (in_array('supervisor', $t_role)) {
+  if ($t_role[0] == 'supervisor') {
     $uid = $form_state['values']['uid'];
     // create profile object
     $profile = profile_create(array('user' => $uid, 'type' => 'supervisor'));
 
     // assign organization ID, store in $t_role[1] at validation time
-    $profile->field_sup_org[LANGUAGE_NONE][0]['target_id'] = $t_role[1]; //stored by variable_set in validation
+    $profile->field_sup_org['und'][0]['target_id'] = $t_role[1]; //stored by variable_set in validation
+    // assign default name
+    //$profile->field_sup_name['und'][0]['value'] = (string) $form_state['values']['name'];
     // assign email address
-    $profile->field_sup_email[LANGUAGE_NONE][0]['value'] = $form_state['values']['mail']; 
+    $profile->field_sup_email['und'][0]['email'] = (string) $form_state['values']['mail']; 
 
     // save profile
     profile2_save($profile);
+    
     // logic copies from content_access.module and content_access.admin.inc
     // give this supervisor permission to edit her organization
     // requires content_access and acl modules
@@ -541,6 +550,24 @@ function ims_user_submit($form, &$form_state) {
     node_access_acquire_grants($node);
 
     module_invoke_all('per_node', $settings);
+  }
+  elseif ($t_role[0] == 'student'){
+   $oid = $t_role[1]; // stored in ims_user_register_validation
+   $node = node_load($oid);
+   if (isset($node)) {
+     $uid = $form_state['values']['uid'];
+     // create profile object
+     $profile = profile_create(array('user' => $uid, 'type' => 'student_profile'));
+     // assign student ID, stored in $t_role[1] at validation time
+     $profile->field_stp_datatel_student['und'][0]['target_id'] = $t_role[1]; 
+     // assign default first name
+     $profile->field_stp_fname['und'][0]['value'] = (string) $node->field_st_fname['und'][0]['value'];
+     // assign default last name
+     $profile->field_stp_lname['und'][0]['value'] = (string) $node->field_st_lname['und'][0]['value'];
+
+     // save profile
+     profile2_save($profile);
+   }
   }
 }
 /**
