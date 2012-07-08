@@ -840,3 +840,4 @@ function profile2_user_get_properties($account, array $options, $name) {
   $profile = profile2_load_by_user($account, substr($name, 8));
   return $profile ? $profile : NULL;
 }
+

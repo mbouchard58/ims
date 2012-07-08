@@ -17,11 +17,11 @@ function media_media_plugin() {
 
   // Plugin definition
   $plugins['media'] = array(
-    'title' => t(media_variable_get('wysiwyg_title')),
+    'title' => media_variable_get('wysiwyg_title'),
     'vendor url' => 'http://drupal.org/project/media',
     'icon path' => drupal_get_path('module', 'media') . '/images',
     'icon file' => 'wysiwyg-media.gif',
-    'icon title' => t(media_variable_get('wysiwyg_icon_title')),
+    'icon title' => media_variable_get('wysiwyg_icon_title'),
     // @todo: move this to the plugin directory for the wysiwyg plugin.
     'js path' => drupal_get_path('module', 'media') . '/js',
     'js file' => 'wysiwyg-media.js',

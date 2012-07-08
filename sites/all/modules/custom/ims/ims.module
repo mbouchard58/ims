@@ -152,7 +152,9 @@ function ims_form_alter(&$form, &$form_state, $formID) {
 /* Implements hook_form_FORM_ID_alter(). */
  function ims_form_internship_node_form_alter(&$form, &$form_state) {
   global $user;
-
+  // default title size is 60, which is too wide for the left panel of a two panel form
+  $form['title']['#size'] = 53;
+  
   $t_role = "supervisor";
 
   // only set default values for supervisors and when she is creating a new internship (nid not set)
@@ -171,8 +173,7 @@ function ims_form_alter(&$form, &$form_state, $formID) {
       $form['field_int_org_id']['und']['#default_value'] = array($super_profile->field_sup_org['und'][0]['target_id']);     
       $form['field_int_sup_name']['und'][0]['value']['#default_value'] = $super_profile->field_sup_name['und'][0]['value'];
       $form['field_int_sup_phone']['und'][0]['value']['#default_value'] = $super_profile->field_sup_phone['und'][0]['value'];
-      $form['field_int_sup_email']['und'][0]['value']['#default_value'] = $super_profile->field_sup_email['und'][0]['value'];
-      //dpm($form);
+      $form['field_int_sup_email']['und'][0]['email']['#default_value'] = $super_profile->field_sup_email['und'][0]['email'];
     }
   }
   else {
@@ -180,26 +181,22 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     $form['field_int_assignment']['und']['#options'] = array();
     $form['field_int_assignment']['und']['#options']['_none'] = "- None -";
     
-    $value = $form['field_int_course']['und']['#default_value'][0];
+    $course_tid = $form['field_int_course']['und']['#default_value'][0];
     
-    if ($value != NULL) {
-      //the internship has a course so find only those students who are registered for the course
-      /*
-      $entity_type = "profile2";
-      $bundle = "student_profile";
-      $field_name = "field_stp_course";
-      $column = 'tid';
-      $pids = tedbow_utils_find_entities_with_field_value($entity_type, $bundle, $field_name, $value, $column);
-      */
-       
-      // $results should be a list of pids for students taking the course for which this internship is assigned
-      foreach ($pids as $pid) {
-        $student_profile = profile2_load($result);
+    if ($course_tid != NULL) {
+      //the internship is for a course; find only those students who are registered for the course
+      // execute the Students Course view. It will return all the students taking a particular course
+      // pass in the course TID as an
+      $view_name = "students_in_a_course";
+      $display_id = "block";  
+      $results = views_get_view_result($view_name, $display_id,  $course_tid);
+      // $results should be a list students taking the course for which this internship is assigned
+      foreach ($results as $result) {
         
-        if ((empty($student_profile->field_stp_assignment)) || 
-            ($student_profile->field_stp_assignment['und'][0]['target_id'] == $form['nid']['#value'])) {       
-          $form['field_int_assignment']['und']['#options'][$pid] = $student_profile->field_stp_fname['und'][0]['value'] . " ";
-          $form['field_int_assignment']['und']['#options'][$$pid] .= $student_profile->field_stp_lname['und'][0]['value'];
+        if ((empty($result->field_field_stp_assignment)) || 
+            ($result->field_field_stp_assignment[0]['raw']['target_id'] == $form['nid']['#value'])) {       
+          $form['field_int_assignment']['und']['#options'][$result->pid] = $result->field_field_stp_fname[0]['raw']['value'] . " ";
+          $form['field_int_assignment']['und']['#options'][$result->pid] .= $result->field_field_stp_lname[0]['raw']['value'];
         }  
       }  
     }
@@ -210,6 +207,43 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     $form['#submit'][] = 'ims_internship_node_submit';
   }
 }
+/**
+* @file
+* Change the input size of the title to 45.
+* Implements hook_form_FORM_ID_alter().
+**/
+ function ims_form_organization_node_form_alter(&$form, &$form_state) {
+    $form['title']['#size'] = 45;
+ }
+ /**
+* @file
+* Don't allow supervisors to change their org id.
+* 
+**/
+ function ims_form_profile2_edit_supervisor_form_alter(&$form, &$form_state) {
+  global $user;
+  
+  $t_role = "supervisor";
+
+  // supervisors cannot change their org, therefore we'll truncate the list
+  // administrators and archive admins can change a supervisor to any org.
+  if (in_array($t_role, $user->roles)) {
+    // truncate the dropdown.
+    $form['profile_supervisor']['field_sup_org']['und']['#options'] = array();
+    
+    // the supervisor profile will have a #default_value because it was populated during registration
+    // @see ims_user_submit
+    $nid = $form['profile_supervisor']['field_sup_org']['und']['#default_value'][0];
+    // load the organization node to get the title
+    $node = node_load($nid);
+    
+    // testing $node as a precaution; should *always* be populated
+    if (isset($node)) {
+     $form['profile_supervisor']['field_sup_org']['und']['#options'][$nid] = $node->title;
+    }
+  }
+ }
+ 
 /**
 * @file
 * Specifies rules for restricting student user registration based on email addr found in datatel student table
@@ -551,7 +585,7 @@ function ims_user_submit($form, &$form_state) {
 
     module_invoke_all('per_node', $settings);
   }
-  elseif ($t_role[0] == 'student'){
+  elseif ($t_role[0] == 'student') {
    $oid = $t_role[1]; // stored in ims_user_register_validation
    $node = node_load($oid);
    if (isset($node)) {
@@ -593,9 +627,6 @@ function ims_views_default_views() {
 function ims_views_query_alter(&$view, &$query) {
 
   global $user;
-
-  //dpm($view);
-  //dpm($query);
  
   switch ($view->name) {
    case 'internships':
@@ -608,8 +639,13 @@ function ims_views_query_alter(&$view, &$query) {
     
       if (!empty($profile_values)) {  
         $student_profile = $profile_values['student_profile'];
-        // set the course condition in the view to the course in which the student is enrolled
-        $query->where[1]['conditions'][2]['value'][0] = $student_profile->field_stp_course['und'][0]['tid'];     
+        // get the datatel student record
+        $nid = $student_profile->field_stp_datatel_student['und'][0]['target_id'];
+        $node = node_load($nid);
+        if (isset($node)) {
+          // set the course condition in the view to the course in which the student is enrolled
+          $query->where[1]['conditions'][2]['value'][0] = $node->field_st_course['und'][0]['tid'];    
+        } 
       }
      }
      break;

@@ -226,7 +226,7 @@ function media_add_upload_submit($form, &$form_state) {
   $file->display = TRUE;
 
   // Change the file status from temporary to permanent.
-  _media_save_file_permenently($file);
+  _media_save_file_permanently($file);
 
   // Determine what URI scheme this file should use.
   $scheme = !empty($params['uri_scheme']) && file_stream_wrapper_valid_scheme($params['uri_scheme']) ? $params['uri_scheme'] : file_default_scheme();
@@ -291,7 +291,7 @@ function media_add_upload_multiple_submit($form, &$form_state) {
 
       $file = file_uri_to_object($destination);
       file_save($file);
-      _media_save_file_permenently($file);
+      _media_save_file_permanently($file);
 
       $saved_files[] = $file;
     }

@@ -1,0 +1,158 @@
+div.field-type-taxonomy-term-reference,
+body {
+	font-family: "Lucida Sans Unicode", "Lucida Grande", Arial, Helvetica;
+}
+
+#page-title h2 {
+	font-family: Arial;
+}
+
+.page-node-146 h1#page-title {
+    display: none;
+}
+
+#main-menu-links a {
+    background: none repeat scroll 0 0 #E5F9AA;
+}
+
+#footer ul {
+   margin-left: auto;
+   margin-right: auto;
+   width: 600px;
+}
+
+#footer {
+	margin-top: 0px;
+	border-top: 0px;
+	font-size: 1.18em;
+}
+
+#main-menu {
+	font-size: 1.15em;
+}
+
+#breadcrumb .breadcrumb {
+	display:none;
+}
+
+#footer-wrapper {
+	padding-top: 3px;
+}
+
+#main {
+	margin-bottom: 0px;
+}
+
+.views-table {
+	font-size:14px;
+}
+/*
+.views-table thead {
+	display:none;
+}
+*/
+
+/* Hide user info on search results */
+.search-info {
+  display: none;
+}
+.form-radios .form-item {
+float: left;
+width: 12%;
+}
+.field-type-list-boolean .form-radios:after {
+    clear: both;
+    content: ".";
+    display: block;
+    height: 0;
+    visibility: hidden;
+}
+.field-type-taxonomy-term-reference {
+  text-align: left;
+}
+.field-type-taxonomy-term-reference .field-label {
+  color: #3b3b3b;
+  font-weight: bold;
+  text-align: left;
+}
+.field-type-taxonomy-term-reference .field-label,
+.field-type-taxonomy-term-reference ul.links {
+  font-size: 1.0em;
+}
+.field-type-taxonomy-term-reference ul.links {
+  list-style: none;
+}
+.field-type-taxonomy-term-reference ul.links li {
+  float: left; 
+  white-space: nowrap;
+}
+h2.pane-title,
+.views-label {
+  font-size: 1.0em !important;
+  color: #3b3b3b !important;
+  font-weight: bold !important;
+  text-align: left !important;
+  margin: 0px 2px 0px 2px !important; 
+  padding: 0 !important;
+  float: left !important;
+}
+
+.panel-col-first .field-label,
+.panel-col-first h2.pane-title,
+.panel-col-first .views-label,
+.entity-profile2 .field-label {
+   width: 107px;
+}
+
+.panel-col-last .field-label,
+.panel-col-last h2.pane-title,
+.panel-col-last .views-label { 
+  width: 115px;
+}
+
+.pane-content,
+.entity-profile2  {
+  text-align: left; 
+  margin: 5px 2px 5px 2px; 
+  padding: 0;
+}
+#student-rendered .field-name-field-stp-fname {
+    float: left;
+    margin: 0px 2px 0px 2px !important; 
+    padding: 0 !important;
+}
+#student-rendered .field-name-field-stp-fname:after {
+    content: " ";
+}
+#student-rendered h2 {
+    display: none;
+}
+ul.student-choices {
+    list-style-type: none;
+    margin: 5px 2px 5px 2px !important; 
+    padding: 0 !important;
+    
+}
+.field-name-field-org-hours-desc .field-label,  
+.field-name-field-org-mass-transit-desc .field-label, 
+.field-name-field-org-parking-desc .field-label,
+.field-name-field-int-sup-phone .field-label,
+.field-name-field-int-sup-email .field-label {
+  white-space: nowrap;
+  visibility: hidden;
+}
+.panel-separator {
+    margin: 0 !important;
+    padding: 0 !important;
+    visibility: hidden;
+}
+.country-US .locality:after {
+    content: ",";
+}
+.views-field .field-content {
+    text-align: left;
+}
+.view-supervisor-s-organization .views-field-field-org-address .locality-block,
+.view-supervisor-s-organization .views-field-field-org-address .locality-block + .country {
+    margin-left: 120px;
+}

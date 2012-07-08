@@ -69,6 +69,10 @@ function media_help($path, $arg) {
       $output .= '<ul><li>' . t('Enable WYSIWYG plugin on your desired <a href="@wysiwyg-profile">WYSIWYG profile</a>. Please note that you will need to have <a href="@wysiwyg">WYSIWYG</a> module enabled.', array('@wysiwyg-profile' => url('admin/config/content/wysiwyg'), '@wysiwyg' => 'http://drupal.org/project/wysiwyg')) . '</li>';
       $output .= '<li>' . t('Add Media Filter to the WYSIWYG enabled <a href="@input-format">Input format</a>', array('@input-format' => url('admin/config/content/formats'))) . '</li></ul></dd>';
       return $output;
+    case 'admin/config/media/file-types/manage/%/display/media_preview':
+    case 'admin/config/media/file-types/manage/%/file-display/media_preview':
+      drupal_set_message(t('Changing the Preview view mode could have unintended side effects such as breaking the Media browser or WYSIWYG integration. Only change these display settings if you know what you are doing.'), 'warning');
+      break;
   }
 }
 
@@ -443,10 +447,11 @@ function media_page_alter(&$page) {
 
   if (isset($_GET['render']) && $_GET['render'] == 'media-popup') {
     $page['#theme'] = 'media_dialog_page';
-    // temporary fix while awaiting fix for 914786
-    if (module_exists('admin_menu')) {
-      admin_menu_suppress();
-    }
+
+    // Disable administration modules from adding output to the popup.
+    // @see http://drupal.org/node/914786
+    module_invoke_all('suppress');
+
     foreach (element_children($page) as $key) {
       if ($key != 'content') {
         unset($page[$key]);
@@ -923,7 +928,7 @@ function media_element_process(&$element, &$form_state, $form) {
     '#type' => 'item',
     '#markup' => $markup,
     '#prefix' => '<div class="preview launcher">',
-    '#suffix' => '</div><a class="button launcher" href="#">' . t(media_variable_get('field_select_media_text')) . '</a><a class="button remove" href="#">' . t(media_variable_get('field_remove_media_text')) . '</a>',
+    '#suffix' => '</div><a class="button launcher" href="#">' . media_variable_get('field_select_media_text') . '</a><a class="button remove" href="#">' . media_variable_get('field_remove_media_text') . '</a>',
   );
 
   /**
@@ -1037,7 +1042,7 @@ function media_filter_info() {
  * @param $file
  *  A file object.
  */
-function _media_save_file_permenently(&$file) {
+function _media_save_file_permanently($file) {
   if ($file->status < FILE_STATUS_PERMANENT) {
     $file->status = FILE_STATUS_PERMANENT;
     file_save($file);

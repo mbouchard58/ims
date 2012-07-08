@@ -31,7 +31,7 @@ class FeedsDatatelParser extends FeedsParser {
     // create a list of all the course names from the taxonomy tree
     $termNames = array();
     foreach ($terms as $term) {
-      $termNames[] = $term->name;
+      $termNames[$term->tid] = $term->name;
     }
 
     $active_tid = ims_get_active_semester();
@@ -44,7 +44,8 @@ class FeedsDatatelParser extends FeedsParser {
 
     foreach ($sections as $section) {
       $courseName = (string) $section->section_info['course_name'];
-      if (in_array($courseName, $termNames)) {
+      $t_key = array_search($courseName, $termNames);
+      if ($t_key) {
         $guid = (string) $section->section_info['sec_name'] . "-";
         $guid .= $section->term['term_id']; 
         $secNo = (string) $section->section_info['section_no'];
@@ -58,7 +59,7 @@ class FeedsDatatelParser extends FeedsParser {
           $student['fname'] = (string) $regItem->demographics['first_name'];
           $student['lname'] = (string) $regItem->demographics['last_name'];
           $student['email'] = (string) $regItem->demographics['simmons_email'];
-          $student['course_name'] = $courseName;
+          $student['course_id'] = $t_key;
           $student['section_no'] = $secNo;
           $student['semester'] = $active_tid;
           $result->items[] = $student;
@@ -110,9 +111,9 @@ class FeedsDatatelParser extends FeedsParser {
         'name' => t('Email'),
         'description' => t('Email of the student.'),
       ),
-      'course_name' => array(
-        'name' => t('Course Name'),
-        'description' => t('The course in which the student is enrolled.'),
+      'course_id' => array(
+        'name' => t('Course ID'),
+        'description' => t('The course ID for the course in which the student is enrolled.'),
       ),
       'section_no' => array(
         'name' => t('Section Number'),
