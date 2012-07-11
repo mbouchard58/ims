@@ -7,7 +7,7 @@ body {
 	font-family: Arial;
 }
 
-.page-node-146 h1#page-title {
+.page-node-94 h1#page-title {
     display: none;
 }
 
@@ -46,15 +46,20 @@ body {
 .views-table {
 	font-size:14px;
 }
-/*
+
 .views-table thead {
-	display:none;
+	background-color: #9DCD0F;
 }
-*/
 
 /* Hide user info on search results */
 .search-info {
   display: none;
+}
+#edit-profile-student-profile-field-stp-datatel-student,
+#edit-profile-student-profile-field-stp-assignment {
+    clear: both;
+    height: 0;
+    visibility: hidden;
 }
 .form-radios .form-item {
 float: left;
@@ -96,18 +101,21 @@ h2.pane-title,
   padding: 0 !important;
   float: left !important;
 }
-
+.panel-col-top .field-label,
+.panel-col-top h2.pane-title,
+.panel-col .field-label,
+.panel-col h2.pane-title,
 .panel-col-first .field-label,
 .panel-col-first h2.pane-title,
 .panel-col-first .views-label,
 .entity-profile2 .field-label {
-   width: 107px;
+   width: 115px;
 }
 
 .panel-col-last .field-label,
 .panel-col-last h2.pane-title,
 .panel-col-last .views-label { 
-  width: 115px;
+  width: 125px;
 }
 
 .pane-content,
@@ -118,11 +126,14 @@ h2.pane-title,
 }
 #student-rendered .field-name-field-stp-fname {
     float: left;
-    margin: 0px 2px 0px 2px !important; 
-    padding: 0 !important;
+    position: relative;
+    top: -9px;
 }
-#student-rendered .field-name-field-stp-fname:after {
-    content: " ";
+#student-rendered .field-name-field-stp-lname {
+    float: left;
+    position: relative;
+    top: -9px;
+    left: 4px;
 }
 #student-rendered h2 {
     display: none;
@@ -137,7 +148,16 @@ ul.student-choices {
 .field-name-field-org-mass-transit-desc .field-label, 
 .field-name-field-org-parking-desc .field-label,
 .field-name-field-int-sup-phone .field-label,
-.field-name-field-int-sup-email .field-label {
+.field-name-field-int-sup-email .field-label,
+.field-name-field-eval-sat-comments .field-label,
+.field-name-field-eval-con-comments .field-label,
+.field-name-field-eval-mat-comments .field-label,
+.field-name-field-eval-kno-comments .field-label,
+.field-name-field-eval-res-comments .field-label,
+.field-name-field-eval-dre-comments .field-label,
+.field-name-field-eval-pun-comments .field-label,
+.field-name-field-eval-not-comments .field-label,
+.field-name-field-eval-com-comments .field-label {
   white-space: nowrap;
   visibility: hidden;
 }

@@ -242,8 +242,7 @@ function ims_form_alter(&$form, &$form_state, $formID) {
      $form['profile_supervisor']['field_sup_org']['und']['#options'][$nid] = $node->title;
     }
   }
- }
- 
+ } 
 /**
 * @file
 * Specifies rules for restricting student user registration based on email addr found in datatel student table
@@ -340,7 +339,7 @@ function ims_form_alter(&$form, &$form_state, $formID) {
   if ($form['nid']['#value'] == NULL) {
     //check to see how many choices this student has already made
     if (count($results) > 2){
-     form_set_error('student choice', t('You have already have made three choices.'));
+     form_set_error('student choice', t('You have already made three choices.'));
     }
   
     // if the student has choices already, make sure she doesn't use the same rank again
