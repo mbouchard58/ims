@@ -109,7 +109,7 @@ h2.pane-title,
 .panel-col-first h2.pane-title,
 .panel-col-first .views-label,
 .entity-profile2 .field-label {
-   width: 115px;
+   width: 120px;
 }
 
 .panel-col-last .field-label,
@@ -173,6 +173,7 @@ ul.student-choices {
     text-align: left;
 }
 .view-supervisor-s-organization .views-field-field-org-address .locality-block,
+.view-supervisor-s-organization .views-field-field-org-address .street-block,
 .view-supervisor-s-organization .views-field-field-org-address .locality-block + .country {
-    margin-left: 120px;
+    margin-left: 128px;
 }

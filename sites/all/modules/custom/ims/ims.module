@@ -36,7 +36,7 @@ function ims_form_alter(&$form, &$form_state, $formID) {
   
   if ($t_nid) {
     $t_int_node = node_load($t_nid);
-    if ($t_int_node) {
+    if (($t_int_node) && (!empty($t_int_node->field_int_assignment['und']))) {
      // build the drop down for the students assigned to this internship
      foreach ($t_int_node->field_int_assignment['und'] as $t_assn) {
        if (!empty($t_assn['target_id'])) {
@@ -74,7 +74,7 @@ function ims_form_alter(&$form, &$form_state, $formID) {
   
   if ($t_nid) {
     $t_int_node = node_load($t_nid);
-    if ($t_int_node) {
+    if (($t_int_node) && (!empty($t_int_node->field_int_assignment['und']))) {
      // build the drop down for the students assigned to this internship
      foreach ($t_int_node->field_int_assignment['und'] as $t_assn) {
        if (!empty($t_assn['target_id'])) {
@@ -107,7 +107,11 @@ function ims_form_alter(&$form, &$form_state, $formID) {
 /* Implements hook_form_FORM_ID_alter(). */
  function ims_form_internship_choice_node_form_alter(&$form, &$form_state) {
   global $user;
-
+  
+  $course_match = 0;
+  //clear course match from previous sessions
+  variable_set('course_match', $course_match);
+      
   $t_role = "student";
   $form['#validate'][] = 'ims_internship_choice_validation';
   $form['#submit'][] = 'ims_internship_choice_node_submit';
@@ -123,12 +127,29 @@ function ims_form_alter(&$form, &$form_state, $formID) {
       if (isset($tid)){
         $form['field_ch_semester']['und']['#default_value'] = array($tid);
       }
-      
-      $t_node = $form['#node'];
-      $t_node_id = $t_node->field_ch_internship['und'][0]['target_id'];
-      $int_node = node_load($t_node_id);
-
       $std_profile = $profile_values['student_profile'];
+      
+      // get the internship node
+      $t_node = $form['#node'];
+      $nid = $t_node->field_ch_internship['und'][0]['target_id'];
+      $int_node = node_load($nid);
+      if (isset($int_node)) {
+        $int_course = $int_node->field_int_course['und'][0]['target_id'];
+        $course_match++;
+      }
+      
+      // get the datatel student record
+      $nid = $std_profile->field_stp_datatel_student['und'][0]['target_id'];       
+      $node = node_load($nid);
+      if (isset($node)) {
+        $std_course = $node->field_st_course['und'][0]['tid'];    
+        $course_match++;
+      } 
+    
+      if (($course_match == 2) && ($int_course == $std_course)) $course_match++;
+      
+      //save course match for validation
+      variable_set('course_match', $course_match);
       
       $dTitle = (string) $int_node->title;
       $dTitle .= '-';
@@ -264,6 +285,29 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     $form['#submit'][] = 'ims_user_submit';
   //} 
  }
+  /*
+  * Return the active semester
+  */
+ function ims_get_active_semester() {
+   $tid = NULL;
+   
+   //get vocabulary ID for "Semesters" vocabulary
+   // we only want the active semester
+   $vid = taxonomy_vocabulary_machine_name_load("semesters")->vid;
+
+   //get all the terms in the vocabulary. there should only be a few
+   $terms = taxonomy_get_tree($vid, $parent = 0, $max_depth = NULL, $load_entities = TRUE);
+      
+   foreach ($terms as $term) {
+     // find the active semester
+     if ($term->field_tax_sem_active['und'][0]['value'] == '1') {
+       $tid = $term->tid;
+       break;
+     }
+   }
+   return $tid;
+ }
+ 
  function ims_internship_choice_node_submit(&$form, &$form_state) { 
   // load internship node, increment chosen and save it
   // need to test for new choice, deleted choice (decrement chosen) or changed choice (inc and dec)
@@ -301,28 +345,7 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     }
   }
  }
- /*
-  * Return the active semester
-  */
- function ims_get_active_semester() {
-   $tid = NULL;
-   
-   //get vocabulary ID for "Semesters" vocabulary
-   // we only want the active semester
-   $vid = taxonomy_vocabulary_machine_name_load("semesters")->vid;
 
-   //get all the terms in the vocabulary. there should only be a few
-   $terms = taxonomy_get_tree($vid, $parent = 0, $max_depth = NULL, $load_entities = TRUE);
-      
-   foreach ($terms as $term) {
-     // find the active semester
-     if ($term->field_tax_sem_active['und'][0]['value'] == '1') {
-       $tid = $term->tid;
-       break;
-     }
-   }
-   return $tid;
- }
  function ims_internship_choice_validation(&$form, &$form_state) { 
   //grab the rank the student had just entered
   $t_rank = $form_state['values']['field_ch_rank']['und'][0]['value'];
@@ -335,23 +358,26 @@ function ims_form_alter(&$form, &$form_state, $formID) {
   $display_id = "block";
   $results = views_get_view_result($view_name, $display_id);
   
-  // we have one set of validations for adding new choices and another for editing existing choices
+  // we only need to validate on add.
   if ($form['nid']['#value'] == NULL) {
     //check to see how many choices this student has already made
     if (count($results) > 2){
      form_set_error('student choice', t('You have already made three choices.'));
     }
-  
-    // if the student has choices already, make sure she doesn't use the same rank again
-    // or she doesn't pick the same internship twice
+    
+    $course_match = variable_get('course_match');
+    if ($course_match < 3) {
+      form_set_error('student choice', t('You may only choose internships for a course in which you are enrolled.'));
+    }
+    // if the student has choices already, make sure she doesn't pick the same internship twice or use the same rank
     if (count($results) > 0) {
       foreach ($results as $result){
-        if ($t_rank == $result->field_field_ch_rank[0]['raw']['value']) {
-          form_set_error('student choice', t('You already have a choice of rank ' . $t_rank . '.'));
-          break;
-        } 
         if ($t_internship_id == $result->node_field_data_field_ch_internship_nid) {
           form_set_error('student choice', t('You already have chosen this internship.'));
+          break;
+        }
+       if ($t_rank == $result->field_ch_student_profile__field_data_field_ch_rank_field_ch_) {
+          form_set_error('student choice', t('You have already used rank ' . $t_rank));
           break;
         }
       }

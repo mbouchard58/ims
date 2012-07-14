@@ -61,7 +61,6 @@ class FeedsOrganizationsParser extends FeedsParser {
     
     $organization = array();
     
-    $count = 0;
     foreach ($orgs as $org) {
       if ((int) $org->column[5] == 0) { // deleted_flag, only want active orgs
         $organization['old_id'] =  (string) $org->column[0]; 
@@ -101,9 +100,8 @@ class FeedsOrganizationsParser extends FeedsParser {
        
         $result->items[] = $organization;
         unset($organization);
-        $count++;
+        
      } //close: if($org->column[5] == 0)
-     if ($count > 4) break;
     } // close:foreach ($orgs as $org) 
     return $result;
   } // close: function parse()
