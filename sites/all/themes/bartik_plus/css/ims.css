@@ -177,3 +177,118 @@ ul.student-choices {
 .view-supervisor-s-organization .views-field-field-org-address .locality-block + .country {
     margin-left: 128px;
 }
+/*
+ * CSS specific to the all-choices view
+ */
+.view-all-choices .view-grouping>.view-grouping-header {
+    float:left;
+    font-weight: bold;
+
+}
+.view-all-choices .view-content h3 {
+    clear: both;
+    float: none;
+    font-size: 1.0em;
+}
+.all-choices-rows .views-field-field-ch-rank {
+    visibility: hidden;
+}
+
+.all-choices-rows .views-field-field-ch-rank:before {
+    content: ".";
+    clear: both;
+    float: none;
+    display: block;
+    height: 0;
+    visibility: hidden;
+}
+.all-choices-rows .views-field-title-1 {
+    padding-right: 15px;
+}
+/* put comma after student's last name */
+.view-all-choices>.view-content>.view-grouping>.view-grouping-header:after {
+    content: ", ";
+    padding: 2px;
+}
+.view-all-choices>.view-content>.view-grouping>.view-grouping-content>.view-grouping:after {
+    content: " ";
+    visibility: hidden;
+    font-weight: normal;
+    padding: 2px;
+}
+/*
+ * CSS specific to choices-by-org view
+ */
+ /*
+ .view-choices-by-org .view-grouping>.view-grouping-header {
+    float: left;
+    font-weight: bold;
+    width: 25%;
+}
+*/
+.view-choices-by-org .view-content .view-grouping>.view-group-level-0 {
+    float: left;
+    font-weight: bold;
+    width: 20em;
+}
+.view-choices-by-org .view-content .view-grouping>.view-group-level-1 {
+    float: left;
+    font-weight: bold;
+    width: 20em;
+}
+.view-choices-by-org .view-content .view-grouping-0>.view-grouping-content>.view-grouping-1 + .view-grouping-1>.view-group-level-1 {
+    margin-left: 20em;
+    font-weight: bold;
+    width: 20em;
+}
+.view-choices-by-org .view-content .view-grouping>.view-group-level-2 {
+    float: left;
+    font-weight: bold;
+    width: 15em;
+}
+.view-choices-by-org .view-content h3 {
+    font-weight: bold;
+    font-size: 1.0em;
+}
+
+/* clear floats from heading groups (Org, Internship, Supervisor Name, Positions). Start students on a new line. */
+.view-choices-by-org .view-content .choices-by-org-rows:before {
+    font-weight: normal;
+    content: ".";
+    clear: both;
+    float: none;
+    display: block;
+    height: 0;
+    visibility: hidden;
+}
+/* start student choices on a new line */
+.view-choices-by-org .view-content .choices-by-org-rows>.views-field-field-stp-lname {
+    float:left;
+    width: 5em;
+}
+/* put a comma after the student's last name 
+.view-choices-by-org .view-content .choices-by-org-rows>.views-field-field-stp-lname>.field-content:after {
+    content: ", ";
+    padding-right: 5px;
+}
+*/
+.view-choices-by-org .view-content .choices-by-org-rows>.views-field-field-stp-fname {
+    float:left;
+    width: 5em;
+}
+.view-choices-by-org .view-content .choices-by-org-rows>.views-field-field-ch-rank {
+    float:left;
+    width: 3em;
+    padding-right: 1em;
+}
+.view-choices-by-org .view-content .choices-by-org-rows>.views-field-field-ch-rank>.field-content {
+    text-align: right;
+}
+.view-choices-by-org .view-content .choices-by-org-rows>.views-field-field-ch-notes:after {
+    content: ".";
+    clear: both;
+    float: none;
+    display: block;
+    height: 0;
+    visibility: hidden;
+}

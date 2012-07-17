@@ -3,6 +3,31 @@
 /*
  * Custom code for GSLIS IMS app
  */
+/**
+ * copy of acl_save_form
+ * since we don't have a form, we're calling a copy
+ * the primary purpose of this function is to give a supervisor update permission to her organization
+ */
+function ims_acl_save($form, $priority = NULL) {
+  $users = unserialize($form['user_list']);
+
+  foreach ($users as $uid => $name) {
+    db_insert('acl_user')
+    ->fields(array(
+      'acl_id' => $form['acl_id'],
+      'uid' => $uid,
+    ))
+    ->execute();
+  }
+  if (isset($priority)) {
+    db_update('acl_node')
+      ->fields(array(
+        'priority' => $priority,
+      ))
+      ->condition('acl_id', $form['acl_id'])
+      ->execute();
+  }
+}
 function ims_evaluation_node_submit(&$form, &$form_state) {
   $student_profile = profile2_load($form_state['values']['field_eval_student']['und'][0]['target_id']);
   $form_state['values']['title'] .=  (string) $student_profile->field_stp_fname['und'][0]['value'] . ' ';
@@ -17,12 +42,12 @@ function ims_final_evaluation_node_submit(&$form, &$form_state) {
 }
 /*
  * quick way to display formID; will be commented most of the time 
-
+ 
 function ims_form_alter(&$form, &$form_state, $formID) {
   dpm($form);
   dpm($form_state);
 }
- */
+*/
 /**
 * @file
 * Build the drop-down list of students from the internship node
@@ -260,7 +285,12 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     
     // testing $node as a precaution; should *always* be populated
     if (isset($node)) {
-     $form['profile_supervisor']['field_sup_org']['und']['#options'][$nid] = $node->title;
+      $org_title = trim(substr($node->title, 0, 45));
+      if (strlen($node->field_org_repository['und'][0]['value']) > 0) {
+        $org_title .= " - " . trim(substr($node->field_org_repository['und'][0]['value'], 0, 30));
+      }
+
+     $form['profile_supervisor']['field_sup_org']['und']['#options'][$nid] = $org_title;
     }
   }
  } 
@@ -532,20 +562,43 @@ function ims_user_register_validation(&$form, &$form_state) {
 
   }
   else {
-   // we've got a potential supervisor, check org table for domain match
-   // is it doesn't match, then the user may not register
+   // we've got a potential supervisor, check org table for email 1, email 2, or domain match
+   // if none match, then the user may not register
     $bundle = "organization";
-    $field_name = "field_org_email";
-    $value = $domain;
+    $field_name = "field_org_email_1";
+    $value = $email;
     
+    // look for a match on primary email address first
     // returns org id (nid of node of content type organization)
-    $oid = tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'value');
+    $oid = tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'email');
     if (!empty($oid)) {
       //set ims_assigned_role to supervisor; used by ims_user_presave
       variable_set('ims_assigned_role', array('supervisor', $oid));
     }
     else {
-      form_set_error('mail', t('Sorry but we cannot register you with that email address. Send email to imsadmin@simmons.edu if you have questions.'));
+      $field_name = "field_org_email_2";
+      
+      // second, check for a match on secondary email
+      // returns org id (nid of node of content type organization)
+      $oid = tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'email');
+      if (!empty($oid)) {
+        //set ims_assigned_role to supervisor; used by ims_user_presave
+        variable_set('ims_assigned_role', array('supervisor', $oid));
+      }
+      else {
+         $field_name = "field_org_email";
+         $value = $domain;
+         // third , check for a match on the email domain
+         // returns org id (nid of node of content type organization)
+         $oid = tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'value');
+         if (!empty($oid)) {
+           //set ims_assigned_role to supervisor; used by ims_user_presave
+           variable_set('ims_assigned_role', array('supervisor', $oid));
+         }
+         else {
+           form_set_error('mail', t('Sorry but we cannot register you with that email address. Send email to imsadmin@simmons.edu if you have questions.'));
+         }
+      }
     }
   }
 }
@@ -571,7 +624,7 @@ function ims_user_submit($form, &$form_state) {
     // save profile
     profile2_save($profile);
     
-    // logic copies from content_access.module and content_access.admin.inc
+    // logic copied from content_access.module and content_access.admin.inc
     // give this supervisor permission to edit her organization
     // requires content_access and acl modules
     $node = node_load($t_role[1]);
@@ -584,7 +637,7 @@ function ims_user_submit($form, &$form_state) {
     // we only care about one operation, update
     $op = 'update';
     
-    //returns an acl_id (it won't exist so one is created)
+    //returns an acl_id (if it doesn't exist, one is created)
     $acl_id = content_access_get_acl_id($node, $op);
     
     //store it
@@ -677,30 +730,4 @@ function ims_views_query_alter(&$view, &$query) {
    default:
      break;
   } 
-}
-/**
- * copy of acl_save_form
- * since we don't have a form, we're calling a copy
- */
-function ims_acl_save($form, $priority = NULL) {
-  $users = unserialize($form['user_list']);
-  db_delete('acl_user')
-    ->condition('acl_id', $form['acl_id'])
-    ->execute();
-  foreach ($users as $uid => $name) {
-    db_insert('acl_user')
-    ->fields(array(
-      'acl_id' => $form['acl_id'],
-      'uid' => $uid,
-    ))
-    ->execute();
-  }
-  if (isset($priority)) {
-    db_update('acl_node')
-      ->fields(array(
-        'priority' => $priority,
-      ))
-      ->condition('acl_id', $form['acl_id'])
-      ->execute();
-  }
 }

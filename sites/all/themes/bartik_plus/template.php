@@ -10,6 +10,14 @@ function bartik_plus_links($variables) {
   }
   return theme_links($variables);
 }
+/**
+ * Process a single grouping within a view.
+ * Implements template_preprocess_views_view_grouping in modules/views/theme/theme
+ 
+function bartik_plus_preprocess_views_view_grouping(&$vars) {
+  dpm($vars);
+}
+*/
 /*
 function bartik_plus_panels_default_style_render_region($display, $region_id, $panes, $settings) {
   $output = '';
