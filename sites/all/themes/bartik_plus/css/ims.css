@@ -55,11 +55,10 @@ body {
 .search-info {
   display: none;
 }
-#edit-profile-student-profile-field-stp-datatel-student,
-#edit-profile-student-profile-field-stp-assignment {
+#edit-profile-student-profile-field-stp-datatel-student {
     clear: both;
     height: 0;
-    visibility: hidden;
+    display: none;
 }
 .form-radios .form-item {
 float: left;
@@ -143,6 +142,24 @@ ul.student-choices {
     margin: 5px 2px 5px 2px !important; 
     padding: 0 !important;
     
+}
+ul.student-choices li.views-row li.views-row-first {
+    margin: 0px 2px 0px 2px !important;
+}
+.panel-col-first ul.student-choices li.views-row {
+    margin-left: 8.5em;
+}
+.panel-col-last ul.student-choices li.views-row {
+    margin-left: 9em;
+}
+.choice-rank-1:after {
+    content:"st";
+}
+.choice-rank-2:after {
+    content:"nd";
+}
+.choice-rank-3:after {
+    content:"rd";
 }
 .field-name-field-org-hours-desc .field-label,  
 .field-name-field-org-mass-transit-desc .field-label, 
@@ -236,6 +253,7 @@ ul.student-choices {
     font-weight: bold;
     width: 20em;
 }
+/* to select second and subsequent internships for the same organization */
 .view-choices-by-org .view-content .view-grouping-0>.view-grouping-content>.view-grouping-1 + .view-grouping-1>.view-group-level-1 {
     margin-left: 20em;
     font-weight: bold;

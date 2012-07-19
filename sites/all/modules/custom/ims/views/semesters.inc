@@ -1,7 +1,7 @@
 <?php
 $view = new view;
 $view->name = 'semesters';
-$view->description = 'Create a list of Semesters to work with Rules';
+$view->description = 'Returns the active semester from the semester vocabulary';
 $view->tag = 'default';
 $view->base_table = 'taxonomy_term_data';
 $view->human_name = 'Active Semester';

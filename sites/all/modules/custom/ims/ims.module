@@ -147,13 +147,9 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     $profile_values = profile2_load_by_user($user->uid);
     
     if (!empty($profile_values)) {
-      // get the active semester
-      $tid = ims_get_active_semester();
-      if (isset($tid)){
-        $form['field_ch_semester']['und']['#default_value'] = array($tid);
-      }
+
       $std_profile = $profile_values['student_profile'];
-      
+
       // get the internship node
       $t_node = $form['#node'];
       $nid = $t_node->field_ch_internship['und'][0]['target_id'];
@@ -265,6 +261,7 @@ function ims_form_alter(&$form, &$form_state, $formID) {
 * @file
 * Don't allow supervisors to change their org id.
 * 
+* Implements hook_form_profile2_edit_PROFILE_TYPE_form_alter
 **/
  function ims_form_profile2_edit_supervisor_form_alter(&$form, &$form_state) {
   global $user;
@@ -293,6 +290,58 @@ function ims_form_alter(&$form, &$form_state, $formID) {
      $form['profile_supervisor']['field_sup_org']['und']['#options'][$nid] = $org_title;
     }
   }
+  else {
+   // rebuild the organization drop down to include the repository
+   $options = $form['profile_supervisor']['field_sup_org']['und']['#options'];
+   foreach ($options as $nid => $title) {
+     if ($nid == "_none") {
+      continue;
+     }
+     $node = node_load($nid);
+     if (isset($node)) {     
+       if (strlen($node->field_org_repository['und'][0]['value']) > 0) {
+         $org_title = trim(substr($node->title, 0, 45));  
+         $org_title .= " - " . trim(substr($node->field_org_repository['und'][0]['value'], 0, 30));
+         $form['profile_supervisor']['field_sup_org']['und']['#options'][$nid] = $org_title;
+       }     
+     }
+   }
+  }
+ } 
+  /**
+* @file
+* The assignment cannot be changed on the student profile
+*
+* Implements hook_form_profile2_edit_PROFILE_TYPE_form_alter
+**/
+ function ims_form_profile2_edit_student_profile_form_alter(&$form, &$form_state) {
+  // truncate the dropdown.
+  $form['profile_student_profile']['field_stp_assignment']['und']['#options'] = array();
+
+  // test to see if the student has an assignment, if no just stuff '- None -' into the drop down.
+  if (!empty($form['profile_student_profile']['field_stp_assignment']['und']['#default_value'])) {
+    $nid = $form['profile_student_profile']['field_stp_assignment']['und']['#default_value'][0];
+    // load the internship node to get the title
+    $node = node_load($nid);
+    
+    // testing $node as a precaution; should *always* be populated
+    if (isset($node)) {
+      $title = "";
+      $ref_title = $node->title;
+      // get org title
+      $org_nid = $node->field_int_org_id['und'][0]['target_id'];
+      $node = node_load($org_nid);
+      if (isset($node)) {
+        $title = $node->title . " - ";
+      }
+      $title .= $ref_title;
+      $form['profile_student_profile']['field_stp_assignment']['und']['#options'][$nid] = $title;
+      
+    }
+  }
+  else {
+   $form['profile_student_profile']['field_stp_assignment']['und']['#options']['_none'] = '- None -';
+  }  
  } 
 /**
 * @file
@@ -547,10 +596,10 @@ function ims_user_register_validation(&$form, &$form_state) {
     // we've got a Simmons student (Simmons supervisors need not register)
    
     $bundle = "student";
-    $field_name = "field_st_email";
+    $field_name = "field_st_email";  // this is not a field of type email as it is with supervisors, hence $column is 'value'
     $value = $email;
-    
-    $oid = tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'value'); 
+        
+    $oid = tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'value', $access = '1'); 
     if (!empty($oid)) {      
       //set ims_assigned_role to student; used by ims_user_presave
       //also store object ID of Student; used by ims_user_submit
@@ -559,8 +608,7 @@ function ims_user_register_validation(&$form, &$form_state) {
     else {
        form_set_error('mail', t('Sorry but you don\'t appear to be registered for an internship course this semester. Send email to imsadmin@simmons.edu if you have questions.'));
     }
-
-  }
+ }
   else {
    // we've got a potential supervisor, check org table for email 1, email 2, or domain match
    // if none match, then the user may not register
@@ -570,7 +618,7 @@ function ims_user_register_validation(&$form, &$form_state) {
     
     // look for a match on primary email address first
     // returns org id (nid of node of content type organization)
-    $oid = tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'email');
+    $oid = tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'email', $access = '1');
     if (!empty($oid)) {
       //set ims_assigned_role to supervisor; used by ims_user_presave
       variable_set('ims_assigned_role', array('supervisor', $oid));
@@ -580,7 +628,7 @@ function ims_user_register_validation(&$form, &$form_state) {
       
       // second, check for a match on secondary email
       // returns org id (nid of node of content type organization)
-      $oid = tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'email');
+      $oid = tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'email', $access = '1');
       if (!empty($oid)) {
         //set ims_assigned_role to supervisor; used by ims_user_presave
         variable_set('ims_assigned_role', array('supervisor', $oid));
@@ -590,9 +638,11 @@ function ims_user_register_validation(&$form, &$form_state) {
          $value = $domain;
          // third , check for a match on the email domain
          // returns org id (nid of node of content type organization)
-         $oid = tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'value');
+         // if there is more than one org with the same email domain (e.g., harvard.edu), only the first will be returned
+         $oid = tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'value', $access = '1');
          if (!empty($oid)) {
            //set ims_assigned_role to supervisor; used by ims_user_presave
+           //save object id for later use as well
            variable_set('ims_assigned_role', array('supervisor', $oid));
          }
          else {
@@ -668,6 +718,11 @@ function ims_user_submit($form, &$form_state) {
    $node = node_load($oid);
    if (isset($node)) {
      $uid = $form_state['values']['uid'];
+     
+     // change datatel student 'record' owner (author) to the new student
+     $node->uid = $uid;
+     node_save($node);
+     
      // create profile object
      $profile = profile_create(array('user' => $uid, 'type' => 'student_profile'));
      // assign student ID, stored in $t_role[1] at validation time
@@ -730,4 +785,53 @@ function ims_views_query_alter(&$view, &$query) {
    default:
      break;
   } 
+}
+/* Borrowed two functions from tedbow utils so I wouldn't have to enable the module
+ * Thanks Ted!!
+ * modified them to allow query to be run as user 1 (administrator)
+ */
+/**
+ * Get entity ids having matching value in a field
+ * @param string $entity_type
+ * @param string$bundle
+ * @param String $field_name
+ * @param string $value
+ * @param string $column
+ * @param string $access
+ *  if '1' then run query as user 1, i.e., administrator
+ * @param array $entity_ids
+ * 	Limit to only these entity ids
+ * @return array
+ */
+function tedbow_utils_find_entities_with_field_value($entity_type, $bundle, $field_name, $value, $column, $access, $entity_ids = array()){
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type',$entity_type, '=');
+  $query->entityCondition('bundle',$bundle, '=');
+  $query->fieldCondition($field_name, $column, $value);
+  if ($access == '1') {
+    $query->addMetaData('account', user_load(1));
+  }
+  if(!empty($entity_ids)){
+    $query->entityCondition('entity_id',$entity_ids, 'IN');
+  }
+  $result = $query->execute();
+  return array_keys(isset($result[$entity_type])?$result[$entity_type]:array());
+}
+/**
+* Get entity that has matching value in a field
+* @param string $entity_type
+* @param string$bundle
+* @param String $field_name
+* @param string $value
+* @param string $column
+* @param string $access
+*   if '1' then run query as user 1
+* @param array $entity_ids
+* 	Limit to only these entity ids
+* @return array
+*/
+
+function tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field_name, $value, $column, $access){
+  $entities = tedbow_utils_find_entities_with_field_value($entity_type, $bundle, $field_name, $value, $column, $access);
+  return array_shift($entities);
 }
