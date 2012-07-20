@@ -197,6 +197,9 @@ ul.student-choices li.views-row li.views-row-first {
 /*
  * CSS specific to the all-choices view
  */
+.view-all-choices .view-content .view-grouping-0 {
+     margin-bottom: 10px;
+ }
 .view-all-choices .view-grouping>.view-grouping-header {
     float:left;
     font-weight: bold;
@@ -208,10 +211,6 @@ ul.student-choices li.views-row li.views-row-first {
     font-size: 1.0em;
 }
 .all-choices-rows .views-field-field-ch-rank {
-    visibility: hidden;
-}
-
-.all-choices-rows .views-field-field-ch-rank:before {
     content: ".";
     clear: both;
     float: none;

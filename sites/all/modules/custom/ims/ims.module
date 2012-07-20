@@ -357,12 +357,12 @@ function ims_form_alter(&$form, &$form_state, $formID) {
   $t_role = "administrator";
 
   // allow administrator to circumvent extra validation
- // if (!in_array($t_role, $user->roles)) {
+  if (!in_array($t_role, $user->roles)) {
     // this adds your custom validation function to the form validation array
     $form['#validate'][] = 'ims_user_register_validation';
     // additional submit function for adding profile2
     $form['#submit'][] = 'ims_user_submit';
-  //} 
+  } 
  }
   /*
   * Return the active semester

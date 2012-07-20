@@ -64,21 +64,9 @@ class FeedsDatatelParser extends FeedsParser {
           $student['semester'] = $active_tid;
           $result->items[] = $student;
           unset($student);
-
-// $regCount exists to keep the dataset small for testing.  Remove for more advanced testing
-	  $regCount++;
-	  if ($regCount > 2) break;
-
         } // close:foreach($regItems as $regItem)
-        $regCount = 0;
-
       } // close:if (in_array...)
-
     } // close:foreach ($sections as $section) 
-/******
-* add logic to delete or encrypt ls_moodle.xml
-* alternatively, the admin could just delete the feed importer when finished.
-*******/
     return $result;
   } // close: function parse()
 

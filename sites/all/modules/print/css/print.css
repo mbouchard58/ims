@@ -58,6 +58,9 @@ img.print-logo {border: 0;}
 /*
  * CSS specific to all-choices view
  */
+ .view-all-choices .view-content .view-grouping-0 {
+     margin-bottom: 10px;
+ }
 .view-all-choices>.view-filters {
     display: none;
 }
@@ -73,10 +76,6 @@ img.print-logo {border: 0;}
     font-weight: normal;
 }
 .all-choices-rows .views-field-field-ch-rank {
-    visibility: hidden;
-}
-
-.all-choices-rows .views-field-field-ch-rank:before {
     content: ".";
     clear: both;
     float: none;
