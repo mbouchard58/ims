@@ -283,7 +283,7 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     // testing $node as a precaution; should *always* be populated
     if (isset($node)) {
       $org_title = trim(substr($node->title, 0, 45));
-      if (strlen($node->field_org_repository['und'][0]['value']) > 0) {
+      if (!empty($node->field_org_repository)) {
         $org_title .= " - " . trim(substr($node->field_org_repository['und'][0]['value'], 0, 30));
       }
 
