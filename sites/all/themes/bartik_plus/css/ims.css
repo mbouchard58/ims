@@ -60,6 +60,11 @@ body {
     height: 0;
     display: none;
 }
+#edit-profile-supervisor-field-sup-multi-org {
+    clear: both;
+    height: 0;
+    display: none;
+}
 .form-radios .form-item {
 float: left;
 width: 12%;

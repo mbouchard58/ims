@@ -3,29 +3,56 @@
 /*
  * Custom code for GSLIS IMS app
  */
-/**
- * copy of acl_save_form
- * since we don't have a form, we're calling a copy
- * the primary purpose of this function is to give a supervisor update permission to her organization
+/*
+ * ims_add_org_acl
+ * add update permission to an organization for a particular user
+ * @param string $uid
+ * @param array $form_state
+ * @param string $nid = organization node id
+ * @return nothing
  */
-function ims_acl_save($form, $priority = NULL) {
-  $users = unserialize($form['user_list']);
-
-  foreach ($users as $uid => $name) {
-    db_insert('acl_user')
-    ->fields(array(
-      'acl_id' => $form['acl_id'],
-      'uid' => $uid,
-    ))
-    ->execute();
-  }
-  if (isset($priority)) {
-    db_update('acl_node')
-      ->fields(array(
-        'priority' => $priority,
+function ims_add_org_acl($uid, &$form_state, $nid) {
+  
+  $node = node_load($nid);
+  if (isset($node)) {
+    //get the current settings 
+    $settings = content_access_get_per_node_settings($node);
+    // Save per-node settings.
+    // content_access_save_per_node_settings($node, $settings);
+    
+    // we only care about one operation, update
+    $op = 'update';
+    
+    //returns an acl_id (if it doesn't exist, one is created)
+    $acl_id = content_access_get_acl_id($node, $op);
+    
+    //store it
+    $form_state['values']['acl'][$op]['acl_id'] = $acl_id;
+    $form_state['values']['acl'][$op]['deletions'][$uid] = 0;
+    $form_state['values']['acl'][$op]['delete_button'] = 'Remove Checked';
+    $form_state['values']['acl'][$op]['add'] = '';
+    $form_state['values']['acl'][$op]['add_button'] = 'Add User';
+    
+    //create a serialized user list for ims_acl_save
+    $user_list[$uid] = $form_state['values']['name'];
+    $form_state['values']['acl'][$op]['user_list'] = serialize($user_list);
+    
+    // following if statement is for robustness. The acl module MUST be enabled
+    if (module_exists('acl')) {
+      db_insert('acl_user')
+       ->fields(array(
+       'acl_id' => $acl_id,
+       'uid' => $uid,
       ))
-      ->condition('acl_id', $form['acl_id'])
       ->execute();
+      module_invoke_all('user_acl', $settings);
+    }
+
+    // from the content_access.module and content_access.admin.inc
+    // Apply new settings.
+    node_access_acquire_grants($node);
+
+    module_invoke_all('per_node', $settings);
   }
 }
 function ims_evaluation_node_submit(&$form, &$form_state) {
@@ -274,20 +301,54 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     // truncate the dropdown.
     $form['profile_supervisor']['field_sup_org']['und']['#options'] = array();
     
-    // the supervisor profile will have a #default_value because it was populated during registration
-    // @see ims_user_submit
-    $nid = $form['profile_supervisor']['field_sup_org']['und']['#default_value'][0];
-    // load the organization node to get the title
-    $node = node_load($nid);
+    //if multi_org flag is 0 then their was only once choice for the org when the profile was created
+    if ($form['profile_supervisor']['field_sup_multi_org']['und'][0]['value']['#default_value'] == 0) {
+      // the supervisor profile will have a #default_value because it was populated during registration
+      // @see ims_user_submit
+      $nid = $form['profile_supervisor']['field_sup_org']['und']['#default_value'][0];
+      // load the organization node to get the title
+      $node = node_load($nid);
     
-    // testing $node as a precaution; should *always* be populated
-    if (isset($node)) {
-      $org_title = trim(substr($node->title, 0, 45));
-      if (!empty($node->field_org_repository)) {
-        $org_title .= " - " . trim(substr($node->field_org_repository['und'][0]['value'], 0, 30));
-      }
+      // testing $node as a precaution; should *always* be populated
+      if (isset($node)) {
+        $org_title = trim(substr($node->title, 0, 45));
+        if (!empty($node->field_org_repository)) {
+          $org_title .= " - " . trim(substr($node->field_org_repository['und'][0]['value'], 0, 30));
+        }
 
-     $form['profile_supervisor']['field_sup_org']['und']['#options'][$nid] = $org_title;
+       $form['profile_supervisor']['field_sup_org']['und']['#options'][$nid] = $org_title;
+      }
+    }
+    else {
+      // when this supervisor registered there were multiple matches on the email domain (e.g. harvard.edu)
+      // build a list of all orgs with this supervisors email domain
+      // the supervisor can then pick the correct organization, we'll update the acl for that org, and...
+      // set the multi org flag to 0. 
+      $domain = ims_get_domain($form['profile_supervisor']['field_sup_email']['und'][0]['email']['#default_value']);
+      $entity_type = "node";  
+      $bundle = "organization";
+      $field_name = "field_org_email";
+      $value = $domain;
+      
+      $oids = tedbow_utils_find_entities_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'value', $access = '1');
+      if (!empty($oids)) {
+        foreach($oids as $nid) {
+          $node = node_load($nid);
+          $org_title = trim(substr($node->title, 0, 45));
+          if (!empty($node->field_org_repository)) {
+            $org_title .= " - " . trim(substr($node->field_org_repository['und'][0]['value'], 0, 30));
+          }
+
+          $form['profile_supervisor']['field_sup_org']['und']['#options'][$nid] = $org_title;
+        }
+        // set multi_org to 0; supervisor gets one chance to pick the correct org
+        $form['profile_supervisor']['field_sup_multi_org']['und'][0]['value']['#default_value'] = 0;
+        // add our custom submit function to the top of the list
+        // we want our submit function executed first before profile2_submit_handler resets $form_state['values']
+        $submit_functions = $form['#submit'];
+        array_unshift($submit_functions, 'ims_super_profile2_submit');
+        $form['#submit'] = $submit_functions;
+      }
     }
   }
   else {
@@ -354,10 +415,12 @@ function ims_form_alter(&$form, &$form_state, $formID) {
  function ims_form_user_register_form_alter(&$form, &$form_state) {
   global $user;
 
+  variable_set('ims_assigned_role', array());
+  
   $t_role = "administrator";
-
-  // allow administrator to circumvent extra validation
-  if (!in_array($t_role, $user->roles)) {
+  
+  // allow administrator to circumvent extra validation but only on the test server.
+  if (!in_array($t_role, $user->roles) && ($GLOBALS['_SERVER']['HTTP_HOST'] != '127.0.0.1')) {
     // this adds your custom validation function to the form validation array
     $form['#validate'][] = 'ims_user_register_validation';
     // additional submit function for adding profile2
@@ -386,7 +449,20 @@ function ims_form_alter(&$form, &$form_state, $formID) {
    }
    return $tid;
  }
- 
+/*
+ * Extract the domain from an email address
+ * ims_get_domain
+ * @param string $email
+ * @return string $domain
+ */
+ function ims_get_domain($email) {
+  
+  $splitIndex = strpos($email, '@')+1;
+  $emailLength = strlen($email);
+  $domain = substr($email, $splitIndex, $emailLength);
+  
+  return $domain;
+ }
  function ims_internship_choice_node_submit(&$form, &$form_state) { 
   // load internship node, increment chosen and save it
   // need to test for new choice, deleted choice (decrement chosen) or changed choice (inc and dec)
@@ -534,6 +610,26 @@ function ims_form_alter(&$form, &$form_state, $formID) {
       break;
   }
  }
+ /*
+  * Extra submit function for profile2 supervisor
+  * only needed on multi_org profiles, that is, those profiles whose email domain matched multiple repositories
+  * the org is now set, clear the multi_org flag and add the acl update permission for this user to her org
+  */
+function ims_super_profile2_submit(&$form, &$form_state) {
+  global $user; 
+  
+  $uid = $user->uid;
+  $nid = $form_state['values']['profile_supervisor']['field_sup_org']['und'][0]['target_id'];
+  
+  // the acl routines need the username in $form_state 
+  $form_state['values']['name'] = $user->name;
+  
+  // give update permission to this supervisor for this organization
+  ims_add_org_acl($uid, $form_state, $nid);
+  
+  // put $form_state back to the way it was
+  //unset($form_state['values']['name']);
+}
 /**
 * @file
 * unassign previously assigned students
@@ -583,12 +679,9 @@ function ims_user_register_validation(&$form, &$form_state) {
 
   //clear out assigned role for next user
   variable_set('ims_assigned_role', array());
-
-  // Get domain
+  
   $email = $form_state['values']['mail'];
-  $splitIndex = strpos($email, '@')+1;
-  $emailLength = strlen($email);
-  $domain = substr($email, $splitIndex, $emailLength);
+  $domain = ims_get_domain($email);
 
   $entity_type = "node";
 
@@ -606,9 +699,9 @@ function ims_user_register_validation(&$form, &$form_state) {
       variable_set('ims_assigned_role', array('student', $oid));
     }
     else {
-       form_set_error('mail', t('Sorry but you don\'t appear to be registered for an internship course this semester. Send email to imsadmin@simmons.edu if you have questions.'));
+       form_set_error('mail', t('Sorry but you don\'t appear to be registered for an internship course this semester. Send email to archives_education@simmons.edu if you have questions.'));
     }
- }
+  }
   else {
    // we've got a potential supervisor, check org table for email 1, email 2, or domain match
    // if none match, then the user may not register
@@ -639,14 +732,25 @@ function ims_user_register_validation(&$form, &$form_state) {
          // third , check for a match on the email domain
          // returns org id (nid of node of content type organization)
          // if there is more than one org with the same email domain (e.g., harvard.edu), only the first will be returned
-         $oid = tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'value', $access = '1');
-         if (!empty($oid)) {
+         $oids = tedbow_utils_find_entities_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'value', $access = '1');
+         if (!empty($oids)) {
            //set ims_assigned_role to supervisor; used by ims_user_presave
            //save object id for later use as well
-           variable_set('ims_assigned_role', array('supervisor', $oid));
+           variable_set('ims_assigned_role', array('supervisor', $oids[0]));
+           
+           //if multiple OIDs were returned, we need to set the multi_org flag in the supervisor profile
+           //when the supervisor logs in she can refine the org to the correct one.
+           
+           if (count($oids) == 1) {
+             $mult_org = 0;
+           }
+           else {
+             $multi_org = 1;            
+           }
+           variable_set('ims_multi_org', $multi_org);
          }
          else {
-           form_set_error('mail', t('Sorry but we cannot register you with that email address. Send email to imsadmin@simmons.edu if you have questions.'));
+           form_set_error('mail', t('Sorry but we cannot register you with that email address. Send email to archives_education@simmons.edu if you have questions.'));
          }
       }
     }
@@ -658,6 +762,7 @@ function ims_user_register_validation(&$form, &$form_state) {
 function ims_user_submit($form, &$form_state) {
   $t_role = array();
   $t_role = variable_get('ims_assigned_role', array());
+  $multi_org = variable_get('ims_multi_org', 0);
 
   if ($t_role[0] == 'supervisor') {
     $uid = $form_state['values']['uid'];
@@ -666,52 +771,19 @@ function ims_user_submit($form, &$form_state) {
 
     // assign organization ID, store in $t_role[1] at validation time
     $profile->field_sup_org['und'][0]['target_id'] = $t_role[1]; //stored by variable_set in validation
-    // assign default name
-    //$profile->field_sup_name['und'][0]['value'] = (string) $form_state['values']['name'];
+    // assign multi_org flag
+    $profile->field_sup_multi_org['und'][0]['value'] = $multi_org;
     // assign email address
     $profile->field_sup_email['und'][0]['email'] = (string) $form_state['values']['mail']; 
 
     // save profile
     profile2_save($profile);
-    
-    // logic copied from content_access.module and content_access.admin.inc
-    // give this supervisor permission to edit her organization
-    // requires content_access and acl modules
-    $node = node_load($t_role[1]);
-    
-    //get the current settings 
-    $settings = content_access_get_per_node_settings($node);
-     // Save per-node settings.
-    content_access_save_per_node_settings($node, $settings);
-    
-    // we only care about one operation, update
-    $op = 'update';
-    
-    //returns an acl_id (if it doesn't exist, one is created)
-    $acl_id = content_access_get_acl_id($node, $op);
-    
-    //store it
-    $form_state['values']['acl'][$op]['acl_id'] = $acl_id;
-    $form_state['values']['acl'][$op]['deletions'][$uid] = 0;
-    $form_state['values']['acl'][$op]['delete_button'] = 'Remove Checked';
-    $form_state['values']['acl'][$op]['add'] = '';
-    $form_state['values']['acl'][$op]['add_button'] = 'Add User';
-    
-    //create a serialized user list for acl_save_form (see sites/all/modules/acl/acl.module)
-    $user_list[$uid] = $form_state['values']['name'];
-    $form_state['values']['acl'][$op]['user_list'] = serialize($user_list);
-    
-    // following if statement is for robustness. The acl module MUST be enabled
-    if (module_exists('acl')) {
-       ims_acl_save($form_state['values']['acl'][$op]);
-       module_invoke_all('user_acl', $settings);
+    $uid = $form_state['values']['uid'];
+    //give this user update access to their org, if we have an org id (we'd better) and the multi_org flag is not set
+    //if the multi-org flag is set then the user will refine her org choice when she edits her profile
+    if (($t_role[1]) && ($multi_org == 0)) {
+      ims_add_org_acl($uid, $form_state, $t_role[1]);
     }
-
-    // from the content_access.module and content_access.admin.inc
-    // Apply new settings.
-    node_access_acquire_grants($node);
-
-    module_invoke_all('per_node', $settings);
   }
   elseif ($t_role[0] == 'student') {
    $oid = $t_role[1]; // stored in ims_user_register_validation

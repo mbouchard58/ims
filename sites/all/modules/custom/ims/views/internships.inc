@@ -1277,8 +1277,11 @@ $handler->display->display_options['empty']['area']['table'] = 'views';
 $handler->display->display_options['empty']['area']['field'] = 'area';
 $handler->display->display_options['empty']['area']['label'] = 'No Internships';
 $handler->display->display_options['empty']['area']['empty'] = FALSE;
-$handler->display->display_options['empty']['area']['content'] = 'You have not entered an internship for the current semester.';
-$handler->display->display_options['empty']['area']['format'] = 'filtered_html';
+$handler->display->display_options['empty']['area']['content'] = '<p>
+<br />
+<h3>You have not entered an internship for the current semester.</h3>
+</p>';
+$handler->display->display_options['empty']['area']['format'] = 'full_html';
 $handler->display->display_options['empty']['area']['tokenize'] = 0;
 $handler->display->display_options['defaults']['relationships'] = FALSE;
 /* Relationship: Entity Reference: Referenced Entity */

@@ -278,6 +278,19 @@ $handler->display->display_options['menu']['context'] = 0;
 /* Display: Supervisor page */
 $handler = $view->new_display('page', 'Supervisor page', 'page_1');
 $handler->display->display_options['display_description'] = 'Shows only the evaluations authored by the supervisor';
+$handler->display->display_options['defaults']['empty'] = FALSE;
+/* No results behavior: Global: Text area */
+$handler->display->display_options['empty']['area']['id'] = 'area';
+$handler->display->display_options['empty']['area']['table'] = 'views';
+$handler->display->display_options['empty']['area']['field'] = 'area';
+$handler->display->display_options['empty']['area']['label'] = 'No Mid-Semester Evaluations';
+$handler->display->display_options['empty']['area']['empty'] = FALSE;
+$handler->display->display_options['empty']['area']['content'] = '<p>
+<br />
+<h3>You have not yet entered any mid-semester evaluations.</h3>
+</p>';
+$handler->display->display_options['empty']['area']['format'] = 'full_html';
+$handler->display->display_options['empty']['area']['tokenize'] = 0;
 $handler->display->display_options['defaults']['arguments'] = FALSE;
 /* Contextual filter: Content: Author uid */
 $handler->display->display_options['arguments']['uid']['id'] = 'uid';
