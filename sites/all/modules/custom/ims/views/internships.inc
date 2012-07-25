@@ -1,4 +1,4 @@
-<?php
+<?php 
 $view = new view;
 $view->name = 'internships';
 $view->description = 'A list of internships';
@@ -710,6 +710,19 @@ $handler->display->display_options['style_options']['empty_table'] = 0;
 $handler->display->display_options['defaults']['style_options'] = FALSE;
 $handler->display->display_options['defaults']['row_plugin'] = FALSE;
 $handler->display->display_options['defaults']['row_options'] = FALSE;
+$handler->display->display_options['defaults']['empty'] = FALSE;
+/* No results behavior: Global: Text area */
+$handler->display->display_options['empty']['area']['id'] = 'area';
+$handler->display->display_options['empty']['area']['table'] = 'views';
+$handler->display->display_options['empty']['area']['field'] = 'area';
+$handler->display->display_options['empty']['area']['label'] = 'No Results';
+$handler->display->display_options['empty']['area']['empty'] = FALSE;
+$handler->display->display_options['empty']['area']['content'] = '<p>
+<br />
+<h3>There are no internships that match the selection criteria.</h3>
+</p>';
+$handler->display->display_options['empty']['area']['format'] = 'full_html';
+$handler->display->display_options['empty']['area']['tokenize'] = 0;
 $handler->display->display_options['defaults']['relationships'] = FALSE;
 /* Relationship: Entity Reference: Referenced Entity */
 $handler->display->display_options['relationships']['field_int_org_id_target_id']['id'] = 'field_int_org_id_target_id';
@@ -957,7 +970,6 @@ $handler->display->display_options['fields']['field_org_mass_transit']['id'] = '
 $handler->display->display_options['fields']['field_org_mass_transit']['table'] = 'field_data_field_org_mass_transit';
 $handler->display->display_options['fields']['field_org_mass_transit']['field'] = 'field_org_mass_transit';
 $handler->display->display_options['fields']['field_org_mass_transit']['relationship'] = 'field_int_org_id_target_id';
-$handler->display->display_options['fields']['field_org_mass_transit']['label'] = 'T';
 $handler->display->display_options['fields']['field_org_mass_transit']['alter']['alter_text'] = 0;
 $handler->display->display_options['fields']['field_org_mass_transit']['alter']['make_link'] = 0;
 $handler->display->display_options['fields']['field_org_mass_transit']['alter']['absolute'] = 0;
@@ -982,7 +994,6 @@ $handler->display->display_options['fields']['field_org_parking']['id'] = 'field
 $handler->display->display_options['fields']['field_org_parking']['table'] = 'field_data_field_org_parking';
 $handler->display->display_options['fields']['field_org_parking']['field'] = 'field_org_parking';
 $handler->display->display_options['fields']['field_org_parking']['relationship'] = 'field_int_org_id_target_id';
-$handler->display->display_options['fields']['field_org_parking']['label'] = 'P';
 $handler->display->display_options['fields']['field_org_parking']['alter']['alter_text'] = 0;
 $handler->display->display_options['fields']['field_org_parking']['alter']['make_link'] = 0;
 $handler->display->display_options['fields']['field_org_parking']['alter']['absolute'] = 0;
@@ -1555,7 +1566,6 @@ $handler->display->display_options['fields']['field_org_mass_transit']['id'] = '
 $handler->display->display_options['fields']['field_org_mass_transit']['table'] = 'field_data_field_org_mass_transit';
 $handler->display->display_options['fields']['field_org_mass_transit']['field'] = 'field_org_mass_transit';
 $handler->display->display_options['fields']['field_org_mass_transit']['relationship'] = 'field_int_org_id_target_id';
-$handler->display->display_options['fields']['field_org_mass_transit']['label'] = 'T';
 $handler->display->display_options['fields']['field_org_mass_transit']['alter']['alter_text'] = 0;
 $handler->display->display_options['fields']['field_org_mass_transit']['alter']['make_link'] = 0;
 $handler->display->display_options['fields']['field_org_mass_transit']['alter']['absolute'] = 0;
@@ -1580,7 +1590,6 @@ $handler->display->display_options['fields']['field_org_parking']['id'] = 'field
 $handler->display->display_options['fields']['field_org_parking']['table'] = 'field_data_field_org_parking';
 $handler->display->display_options['fields']['field_org_parking']['field'] = 'field_org_parking';
 $handler->display->display_options['fields']['field_org_parking']['relationship'] = 'field_int_org_id_target_id';
-$handler->display->display_options['fields']['field_org_parking']['label'] = 'P';
 $handler->display->display_options['fields']['field_org_parking']['alter']['alter_text'] = 0;
 $handler->display->display_options['fields']['field_org_parking']['alter']['make_link'] = 0;
 $handler->display->display_options['fields']['field_org_parking']['alter']['absolute'] = 0;
@@ -1991,7 +2000,6 @@ $handler->display->display_options['fields']['field_org_mass_transit']['id'] = '
 $handler->display->display_options['fields']['field_org_mass_transit']['table'] = 'field_data_field_org_mass_transit';
 $handler->display->display_options['fields']['field_org_mass_transit']['field'] = 'field_org_mass_transit';
 $handler->display->display_options['fields']['field_org_mass_transit']['relationship'] = 'field_int_org_id_target_id';
-$handler->display->display_options['fields']['field_org_mass_transit']['label'] = 'T';
 $handler->display->display_options['fields']['field_org_mass_transit']['alter']['alter_text'] = 0;
 $handler->display->display_options['fields']['field_org_mass_transit']['alter']['make_link'] = 0;
 $handler->display->display_options['fields']['field_org_mass_transit']['alter']['absolute'] = 0;
@@ -2016,7 +2024,6 @@ $handler->display->display_options['fields']['field_org_parking']['id'] = 'field
 $handler->display->display_options['fields']['field_org_parking']['table'] = 'field_data_field_org_parking';
 $handler->display->display_options['fields']['field_org_parking']['field'] = 'field_org_parking';
 $handler->display->display_options['fields']['field_org_parking']['relationship'] = 'field_int_org_id_target_id';
-$handler->display->display_options['fields']['field_org_parking']['label'] = 'P';
 $handler->display->display_options['fields']['field_org_parking']['alter']['alter_text'] = 0;
 $handler->display->display_options['fields']['field_org_parking']['alter']['make_link'] = 0;
 $handler->display->display_options['fields']['field_org_parking']['alter']['absolute'] = 0;
@@ -2295,6 +2302,19 @@ $handler->display->display_options['style_options']['empty_table'] = 0;
 $handler->display->display_options['defaults']['style_options'] = FALSE;
 $handler->display->display_options['defaults']['row_plugin'] = FALSE;
 $handler->display->display_options['defaults']['row_options'] = FALSE;
+$handler->display->display_options['defaults']['empty'] = FALSE;
+/* No results behavior: Global: Text area */
+$handler->display->display_options['empty']['area']['id'] = 'area';
+$handler->display->display_options['empty']['area']['table'] = 'views';
+$handler->display->display_options['empty']['area']['field'] = 'area';
+$handler->display->display_options['empty']['area']['label'] = 'No Results';
+$handler->display->display_options['empty']['area']['empty'] = FALSE;
+$handler->display->display_options['empty']['area']['content'] = '<p>
+<br />
+<h3>There are no internships that match the selection criteria.</h3>
+</p>';
+$handler->display->display_options['empty']['area']['format'] = 'full_html';
+$handler->display->display_options['empty']['area']['tokenize'] = 0;
 $handler->display->display_options['defaults']['relationships'] = FALSE;
 /* Relationship: Entity Reference: Referenced Entity */
 $handler->display->display_options['relationships']['field_int_org_id_target_id']['id'] = 'field_int_org_id_target_id';
