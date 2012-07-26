@@ -12,20 +12,36 @@
  * @return nothing
  */
 function ims_add_org_acl($uid, &$form_state, $nid) {
+  $debug = FALSE;
+  
+  if ($debug) watchdog('ims_add_org_acl', "Adding ACL to @node for @user - @username", array('@node' => $nid, '@user' => $uid, '@username' => $form_state['values']['name']));
   
   $node = node_load($nid);
   if (isset($node)) {
+    if ($debug) watchdog('ims_add_org_acl', "Loaded nid: @nid - @node", array('@nid' => $nid, '@node' => $node->title));
+    
     //get the current settings 
     $settings = content_access_get_per_node_settings($node);
-    // Save per-node settings.
-    // content_access_save_per_node_settings($node, $settings);
+    if (!isset($settings)) {
+      //if this node has not been used before then we have to establish default settings
+      $settings['view']        = array(2, 3);     
+      $settings['view_own']    = array(2, 3);
+      $settings['update']      = array(3);
+      $settings['update_own']  = array(3);
+      $settings['delete']      = array(3);
+      $settings['delete_own']  = array(3);
+      // Save per-node settings.
+      content_access_save_per_node_settings($node, $settings);
+    }
     
     // we only care about one operation, update
     $op = 'update';
     
     //returns an acl_id (if it doesn't exist, one is created)
     $acl_id = content_access_get_acl_id($node, $op);
+    acl_node_add_acl($node->nid, $acl_id, (int) ($op == 'view'), (int) ($op == 'update'), (int) ($op == 'delete'), content_access_get_settings('priority', $node->type));
     
+    if ($debug) watchdog('ims_add_org_acl', "Got acl_id: @acl_id for @node", array('@acl_id' => $acl_id, '@node' => $node->title));
     //store it
     $form_state['values']['acl'][$op]['acl_id'] = $acl_id;
     $form_state['values']['acl'][$op]['deletions'][$uid] = 0;
@@ -420,7 +436,7 @@ function ims_form_alter(&$form, &$form_state, $formID) {
   $t_role = "administrator";
   
   // allow administrator to circumvent extra validation but only on the test server.
-  if (!in_array($t_role, $user->roles) && ($GLOBALS['_SERVER']['HTTP_HOST'] != '127.0.0.1')) {
+  if (!in_array($t_role, $user->roles) || ($GLOBALS['_SERVER']['HTTP_HOST'] == '127.0.0.1')) {
     // this adds your custom validation function to the form validation array
     $form['#validate'][] = 'ims_user_register_validation';
     // additional submit function for adding profile2
@@ -617,7 +633,7 @@ function ims_form_alter(&$form, &$form_state, $formID) {
   */
 function ims_super_profile2_submit(&$form, &$form_state) {
   global $user; 
-  
+    
   $uid = $user->uid;
   $nid = $form_state['values']['profile_supervisor']['field_sup_org']['und'][0]['target_id'];
   
@@ -762,7 +778,8 @@ function ims_user_register_validation(&$form, &$form_state) {
 function ims_user_submit($form, &$form_state) {
   $t_role = array();
   $t_role = variable_get('ims_assigned_role', array());
-  $multi_org = variable_get('ims_multi_org', 0);
+  // $multi_org = variable_get('ims_multi_org', 0);
+  $multi_org = 1;
 
   if ($t_role[0] == 'supervisor') {
     $uid = $form_state['values']['uid'];
@@ -781,9 +798,11 @@ function ims_user_submit($form, &$form_state) {
     $uid = $form_state['values']['uid'];
     //give this user update access to their org, if we have an org id (we'd better) and the multi_org flag is not set
     //if the multi-org flag is set then the user will refine her org choice when she edits her profile
+    /*
     if (($t_role[1]) && ($multi_org == 0)) {
       ims_add_org_acl($uid, $form_state, $t_role[1]);
     }
+    */
   }
   elseif ($t_role[0] == 'student') {
    $oid = $t_role[1]; // stored in ims_user_register_validation

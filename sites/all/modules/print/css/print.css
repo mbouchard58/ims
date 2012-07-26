@@ -40,12 +40,17 @@ img.print-logo {border: 0;}
 }
 .print-taxonomy li {display: inline;}
 .print-content {}
+/*
 .print-hr {
   border: 0;
   height: 1px;
   width: 100%;
   color: #9E9E9E;
   background-color: #9E9E9E;
+}
+*/
+.print-hr {
+    visibility: hidden;
 }
 .print-message {
   border: medium dotted blue;
@@ -94,11 +99,11 @@ img.print-logo {border: 0;}
     padding: 2px;
 }
 .view-all-choices>.view-content>.view-grouping>.view-grouping-content>.view-grouping:after {
-    content: " ";
-    visibility: hidden;
+    content: "_____________________________________________________________________________________________________________________________";
+    margin-top: 10px;
     font-weight: normal;
-    padding: 2px;
 }
+
 /*
  * CSS specific to choices-by-org view
  
