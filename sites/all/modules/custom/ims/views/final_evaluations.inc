@@ -202,6 +202,19 @@ $handler->display->display_options['filters']['field_int_semester_target_id']['e
 
 /* Display: Admin Page */
 $handler = $view->new_display('page', 'Admin Page', 'page');
+$handler->display->display_options['defaults']['empty'] = FALSE;
+/* No results behavior: Global: Text area */
+$handler->display->display_options['empty']['area']['id'] = 'area';
+$handler->display->display_options['empty']['area']['table'] = 'views';
+$handler->display->display_options['empty']['area']['field'] = 'area';
+$handler->display->display_options['empty']['area']['label'] = 'No Results';
+$handler->display->display_options['empty']['area']['empty'] = FALSE;
+$handler->display->display_options['empty']['area']['content'] = '<p>
+<br />
+<h3>There are no evaluations that match the selection criteria.</h3>
+</p>';
+$handler->display->display_options['empty']['area']['format'] = 'full_html';
+$handler->display->display_options['empty']['area']['tokenize'] = 0;
 $handler->display->display_options['path'] = 'final-evaluations';
 $handler->display->display_options['menu']['type'] = 'normal';
 $handler->display->display_options['menu']['title'] = 'Final Evaluations';

@@ -27,6 +27,18 @@ $handler->display->display_options['exposed_form']['options']['autosubmit_hide']
 $handler->display->display_options['pager']['type'] = 'full';
 $handler->display->display_options['pager']['options']['items_per_page'] = '10';
 $handler->display->display_options['style_plugin'] = 'table';
+/* No results behavior: Global: Text area */
+$handler->display->display_options['empty']['area']['id'] = 'area';
+$handler->display->display_options['empty']['area']['table'] = 'views';
+$handler->display->display_options['empty']['area']['field'] = 'area';
+$handler->display->display_options['empty']['area']['label'] = 'No Results';
+$handler->display->display_options['empty']['area']['empty'] = FALSE;
+$handler->display->display_options['empty']['area']['content'] = '<p>
+<br />
+<h3>There are no profiles that match the selection criteria.</h3>
+</p>';
+$handler->display->display_options['empty']['area']['format'] = 'full_html';
+$handler->display->display_options['empty']['area']['tokenize'] = 0;
 /* Relationship: Organization */
 $handler->display->display_options['relationships']['field_sup_org_target_id']['id'] = 'field_sup_org_target_id';
 $handler->display->display_options['relationships']['field_sup_org_target_id']['table'] = 'field_data_field_sup_org';

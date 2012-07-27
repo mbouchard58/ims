@@ -178,3 +178,8 @@ img.print-logo {border: 0;}
     height: 0;
     visibility: hidden;
 }
+.view-choices-by-org>.view-content>.view-grouping-0:after {
+    content: "_____________________________________________________________________________________________________________________________";
+    margin-top: 10px;
+    font-weight: normal;
+}

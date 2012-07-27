@@ -1,4 +1,4 @@
-<?php
+<?php 
 $view = new view;
 $view->name = 'organizations';
 $view->description = 'Show a list of all organizations';
@@ -120,6 +120,19 @@ if (user_access(\'create organization content\')) {
 ?>';
 $handler->display->display_options['header']['area']['format'] = 'php_code';
 $handler->display->display_options['header']['area']['tokenize'] = 0;
+/* No results behavior: Global: Text area */
+$handler->display->display_options['empty']['area']['id'] = 'area';
+$handler->display->display_options['empty']['area']['table'] = 'views';
+$handler->display->display_options['empty']['area']['field'] = 'area';
+$handler->display->display_options['empty']['area']['label'] = 'No Results';
+$handler->display->display_options['empty']['area']['empty'] = FALSE;
+$handler->display->display_options['empty']['area']['content'] = '<p>
+<br />
+<h3>There are no organizations that match the search criteria.</h3>
+</p>
+';
+$handler->display->display_options['empty']['area']['format'] = 'full_html';
+$handler->display->display_options['empty']['area']['tokenize'] = 0;
 /* Field: Content: Nid */
 $handler->display->display_options['fields']['nid']['id'] = 'nid';
 $handler->display->display_options['fields']['nid']['table'] = 'node';
@@ -423,6 +436,19 @@ if (user_access(\'create organization content\')) {
 ?>';
 $handler->display->display_options['header']['area']['format'] = 'php_code';
 $handler->display->display_options['header']['area']['tokenize'] = 0;
+$handler->display->display_options['defaults']['empty'] = FALSE;
+/* No results behavior: Global: Text area */
+$handler->display->display_options['empty']['area']['id'] = 'area';
+$handler->display->display_options['empty']['area']['table'] = 'views';
+$handler->display->display_options['empty']['area']['field'] = 'area';
+$handler->display->display_options['empty']['area']['label'] = 'No Results';
+$handler->display->display_options['empty']['area']['empty'] = FALSE;
+$handler->display->display_options['empty']['area']['content'] = '<p>
+<br />
+<h3>There are no organizations that match the search criteria.</h3>
+</p>';
+$handler->display->display_options['empty']['area']['format'] = 'full_html';
+$handler->display->display_options['empty']['area']['tokenize'] = 0;
 $handler->display->display_options['defaults']['fields'] = FALSE;
 /* Field: Content: Nid */
 $handler->display->display_options['fields']['nid']['id'] = 'nid';
@@ -669,6 +695,20 @@ if (user_access(\'create organization content\')) {
 ?>';
 $handler->display->display_options['header']['area']['format'] = 'php_code';
 $handler->display->display_options['header']['area']['tokenize'] = 0;
+$handler->display->display_options['defaults']['empty'] = FALSE;
+/* No results behavior: Global: Text area */
+$handler->display->display_options['empty']['area']['id'] = 'area';
+$handler->display->display_options['empty']['area']['table'] = 'views';
+$handler->display->display_options['empty']['area']['field'] = 'area';
+$handler->display->display_options['empty']['area']['label'] = 'No Results';
+$handler->display->display_options['empty']['area']['empty'] = FALSE;
+$handler->display->display_options['empty']['area']['content'] = '<p>
+<br />
+<h3>There are no organizations that match the search criteria.</h3>
+</p>
+';
+$handler->display->display_options['empty']['area']['format'] = 'full_html';
+$handler->display->display_options['empty']['area']['tokenize'] = 0;
 $handler->display->display_options['defaults']['fields'] = FALSE;
 /* Field: Content: Nid */
 $handler->display->display_options['fields']['nid']['id'] = 'nid';

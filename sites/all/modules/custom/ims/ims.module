@@ -301,24 +301,28 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     $form['title']['#size'] = 45;
  }
  /**
-* @file
-* Don't allow supervisors to change their org id.
+* @file ims_form_profile2_edit_supervisor
+* @param $form
+* @param $form_state
+* For supervisors: truncate the list of orgs available to choose from; allow them to change just once
+* For admins: add submit function to add edit permission on the org node for this supervisor
+* For all: modify the drop down display to include the repository
 * 
 * Implements hook_form_profile2_edit_PROFILE_TYPE_form_alter
 **/
  function ims_form_profile2_edit_supervisor_form_alter(&$form, &$form_state) {
   global $user;
-  
-  $t_role = "supervisor";
 
   // supervisors cannot change their org, therefore we'll truncate the list
   // administrators and archive admins can change a supervisor to any org.
-  if (in_array($t_role, $user->roles)) {
+  if (in_array("supervisor", $user->roles)) {
     // truncate the dropdown.
     $form['profile_supervisor']['field_sup_org']['und']['#options'] = array();
     
-    //if multi_org flag is 0 then their was only once choice for the org when the profile was created
-    if ($form['profile_supervisor']['field_sup_multi_org']['und'][0]['value']['#default_value'] == 0) {
+    $multi_org = $form['profile_supervisor']['field_sup_multi_org']['und'][0]['value']['#default_value'];
+    
+    //if multi_org flag is 0 then supervisor (or admin) has previously verified her org. No further changes are allowed.
+    if ($multi_org == 0) {
       // the supervisor profile will have a #default_value because it was populated during registration
       // @see ims_user_submit
       $nid = $form['profile_supervisor']['field_sup_org']['und']['#default_value'][0];
@@ -335,36 +339,59 @@ function ims_form_alter(&$form, &$form_state, $formID) {
        $form['profile_supervisor']['field_sup_org']['und']['#options'][$nid] = $org_title;
       }
     }
-    else {
-      // when this supervisor registered there were multiple matches on the email domain (e.g. harvard.edu)
-      // build a list of all orgs with this supervisors email domain
-      // the supervisor can then pick the correct organization, we'll update the acl for that org, and...
-      // set the multi org flag to 0. 
-      $domain = ims_get_domain($form['profile_supervisor']['field_sup_email']['und'][0]['email']['#default_value']);
-      $entity_type = "node";  
-      $bundle = "organization";
-      $field_name = "field_org_email";
-      $value = $domain;
-      
-      $oids = tedbow_utils_find_entities_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'value', $access = '1');
-      if (!empty($oids)) {
-        foreach($oids as $nid) {
-          $node = node_load($nid);
+    else {     
+     // $multi_org is 1 if there was more than one choice for org when the supervisor registered
+     // otherwise it's set to the org nid; we don't use it as the nid but it saves us from having to find the org again...
+     // since we found an exact match during the registration process 
+     if ($multi_org > 1) {
+        // the supervisor profile will have a #default_value because it was populated during registration
+        // @see ims_user_submit
+        $nid = $form['profile_supervisor']['field_sup_org']['und']['#default_value'][0];
+        // load the organization node to get the title
+        $node = node_load($nid);    
+        // testing $node as a precaution; should *always* be populated
+        if (isset($node)) {
           $org_title = trim(substr($node->title, 0, 45));
           if (!empty($node->field_org_repository)) {
             $org_title .= " - " . trim(substr($node->field_org_repository['und'][0]['value'], 0, 30));
           }
-
           $form['profile_supervisor']['field_sup_org']['und']['#options'][$nid] = $org_title;
         }
-        // set multi_org to 0; supervisor gets one chance to pick the correct org
-        $form['profile_supervisor']['field_sup_multi_org']['und'][0]['value']['#default_value'] = 0;
-        // add our custom submit function to the top of the list
-        // we want our submit function executed first before profile2_submit_handler resets $form_state['values']
-        $submit_functions = $form['#submit'];
-        array_unshift($submit_functions, 'ims_super_profile2_submit');
-        $form['#submit'] = $submit_functions;
+      }    
+      else {
+        // when this supervisor registered there were multiple matches on the email domain (e.g. harvard.edu)
+        // build a list of all orgs with this supervisors email domain
+        // the supervisor can then pick the correct organization, we'll update the acl for that org, and...
+        // set the multi org flag to 0. 
+        
+        $domain = ims_get_domain($form['profile_supervisor']['field_sup_email']['und'][0]['email']['#default_value']); 
+        $entity_type = "node"; 
+        $bundle = "organization";     
+        $field_name = "field_org_email";
+        $value = $domain;
+      
+        $oids = tedbow_utils_find_entities_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'value', $access = '1');
+        if (!empty($oids)) {
+          foreach($oids as $nid) {
+            $node = node_load($nid);
+            $org_title = trim(substr($node->title, 0, 45));
+            if (!empty($node->field_org_repository)) {
+              $org_title .= " - " . trim(substr($node->field_org_repository['und'][0]['value'], 0, 30));
+            }
+ 
+            $form['profile_supervisor']['field_sup_org']['und']['#options'][$nid] = $org_title;
+          }
+        }
       }
+      // set multi_org to 0; supervisor gets one chance to verify or pick the correct org
+      $form['profile_supervisor']['field_sup_multi_org']['und'][0]['value']['#default_value'] = 0;
+      // add our custom submit function to the top of the list
+      // we want our submit function executed first before profile2_submit_handler resets $form_state['values']
+      // this submit function will create an acl for the org linked to this supervisor. This gives the supervisor
+      // edit permission on her org, but only her org
+      $submit_functions = $form['#submit'];
+      array_unshift($submit_functions, 'ims_super_profile2_submit');
+      $form['#submit'] = $submit_functions;
     }
   }
   else {
@@ -383,7 +410,14 @@ function ims_form_alter(&$form, &$form_state, $formID) {
        }     
      }
    }
-  }
+   // set multi_org to 0; supervisor will not be allowed to change the org after an admin has set it
+   $form['profile_supervisor']['field_sup_multi_org']['und'][0]['value']['#default_value'] = 0;
+   // add our custom submit function to the top of the list
+   // we want our submit function executed first before profile2_submit_handler resets $form_state['values']
+   $submit_functions = $form['#submit'];
+   array_unshift($submit_functions, 'ims_super_profile2_submit');
+   $form['#submit'] = $submit_functions;
+  } 
  } 
   /**
 * @file
@@ -628,23 +662,45 @@ function ims_form_alter(&$form, &$form_state, $formID) {
  }
  /*
   * Extra submit function for profile2 supervisor
-  * only needed on multi_org profiles, that is, those profiles whose email domain matched multiple repositories
-  * the org is now set, clear the multi_org flag and add the acl update permission for this user to her org
+  * @function ims_super_profile2_submit
+  * this will be called one time for supervisors allowing them to verify their org
+  * it will be called every time an admin edits and saves a supervisor's profile
+  * This function gives the supervisor edit permission on her affiliated organization
+  * @param $form
+  * @param $form_state
   */
 function ims_super_profile2_submit(&$form, &$form_state) {
-  global $user; 
-    
-  $uid = $user->uid;
+  
+  $super_profile = $form_state['profile2'];
+  $uid = $super_profile->uid;
+  $user = user_load($uid);
+  
+  // if the logged in user can edit any supervisor's profile then the user can move the supervisor to another org.
+  // we must delete the acl edit permission from the old org node before adding it to the new.
+  if (user_access('edit any supervisor profile')) {
+    //get the old org nid
+    $nid = $super_profile->field_sup_org['und'][0]['target_id'];
+   
+    // get the acl_id associated with update access to this nid
+    $acl_id = db_query("SELECT acl_id FROM {acl_node} WHERE nid = :nid AND grant_update = 1", array(
+    'nid' => $nid,
+     ))->fetchField();
+     
+    // it's possible no update permission was ever granted
+    if (isset($acl_id)) {
+      //delete acl_id/uid combo from acl_user
+      acl_remove_user($acl_id, $uid);
+    }
+  }
+ 
+  // now add update permission on the new node
   $nid = $form_state['values']['profile_supervisor']['field_sup_org']['und'][0]['target_id'];
   
   // the acl routines need the username in $form_state 
   $form_state['values']['name'] = $user->name;
   
   // give update permission to this supervisor for this organization
-  ims_add_org_acl($uid, $form_state, $nid);
-  
-  // put $form_state back to the way it was
-  //unset($form_state['values']['name']);
+  ims_add_org_acl($uid, $form_state, $nid); 
 }
 /**
 * @file
@@ -731,6 +787,7 @@ function ims_user_register_validation(&$form, &$form_state) {
     if (!empty($oid)) {
       //set ims_assigned_role to supervisor; used by ims_user_presave
       variable_set('ims_assigned_role', array('supervisor', $oid));
+      variable_set('ims_multi_org', $oid);
     }
     else {
       $field_name = "field_org_email_2";
@@ -741,6 +798,7 @@ function ims_user_register_validation(&$form, &$form_state) {
       if (!empty($oid)) {
         //set ims_assigned_role to supervisor; used by ims_user_presave
         variable_set('ims_assigned_role', array('supervisor', $oid));
+        variable_set('ims_multi_org', $oid);
       }
       else {
          $field_name = "field_org_email";
@@ -758,7 +816,7 @@ function ims_user_register_validation(&$form, &$form_state) {
            //when the supervisor logs in she can refine the org to the correct one.
            
            if (count($oids) == 1) {
-             $mult_org = 0;
+             $mult_org = $oids[0];
            }
            else {
              $multi_org = 1;            
@@ -778,9 +836,10 @@ function ims_user_register_validation(&$form, &$form_state) {
 function ims_user_submit($form, &$form_state) {
   $t_role = array();
   $t_role = variable_get('ims_assigned_role', array());
-  // $multi_org = variable_get('ims_multi_org', 0);
-  $multi_org = 1;
-
+  
+  //multi_org is either the nid of the organization or 1 if there were multiple orgs with the same domain.
+  $multi_org = variable_get('ims_multi_org', 1);
+  
   if ($t_role[0] == 'supervisor') {
     $uid = $form_state['values']['uid'];
     // create profile object
@@ -796,13 +855,6 @@ function ims_user_submit($form, &$form_state) {
     // save profile
     profile2_save($profile);
     $uid = $form_state['values']['uid'];
-    //give this user update access to their org, if we have an org id (we'd better) and the multi_org flag is not set
-    //if the multi-org flag is set then the user will refine her org choice when she edits her profile
-    /*
-    if (($t_role[1]) && ($multi_org == 0)) {
-      ims_add_org_acl($uid, $form_state, $t_role[1]);
-    }
-    */
   }
   elseif ($t_role[0] == 'student') {
    $oid = $t_role[1]; // stored in ims_user_register_validation
