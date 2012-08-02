@@ -1,0 +1,25 @@
+***************
+*** 3308,3314 ****
+          $field = 'entity_id';
+        }
+        $subquery->where("$nalias.$field = na.nid");
+-       $query->exists($subquery);
+      }
+    }
+  
+--- 3308,3322 ----
+          $field = 'entity_id';
+        }
+        $subquery->where("$nalias.$field = na.nid");
++       if (empty($tableinfo['join type'])) {
++         // If we are looking at the main table of the query, apply the 
++         // subquery directly.
++         $query->exists($subquery);
++       } else {
++         // If we are looking at a joined table, add the node access check
++         // to the join condition.
++         $tables[$nalias]['condition'] .= ' AND ' . (string)$subquery;
++       }
+      }
+    }
+  
