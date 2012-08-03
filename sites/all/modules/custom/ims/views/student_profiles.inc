@@ -249,7 +249,9 @@ $handler->display->display_options['fields']['field_st_semester']['element_defau
 $handler->display->display_options['fields']['field_st_semester']['hide_empty'] = 0;
 $handler->display->display_options['fields']['field_st_semester']['empty_zero'] = 0;
 $handler->display->display_options['fields']['field_st_semester']['hide_alter_empty'] = 1;
-$handler->display->display_options['fields']['field_st_semester']['type'] = 'taxonomy_term_reference_plain';
+$handler->display->display_options['fields']['field_st_semester']['settings'] = array(
+  'link' => 0,
+);
 $handler->display->display_options['fields']['field_st_semester']['field_api_classes'] = 0;
 /* Field: Content: Course */
 $handler->display->display_options['fields']['field_st_course']['id'] = 'field_st_course';
@@ -274,8 +276,34 @@ $handler->display->display_options['fields']['field_st_course']['element_default
 $handler->display->display_options['fields']['field_st_course']['hide_empty'] = 0;
 $handler->display->display_options['fields']['field_st_course']['empty_zero'] = 0;
 $handler->display->display_options['fields']['field_st_course']['hide_alter_empty'] = 1;
-$handler->display->display_options['fields']['field_st_course']['type'] = 'taxonomy_term_reference_plain';
+$handler->display->display_options['fields']['field_st_course']['settings'] = array(
+  'link' => 0,
+);
 $handler->display->display_options['fields']['field_st_course']['field_api_classes'] = 0;
+/* Field: Content: Section */
+$handler->display->display_options['fields']['field_st_section']['id'] = 'field_st_section';
+$handler->display->display_options['fields']['field_st_section']['table'] = 'field_data_field_st_section';
+$handler->display->display_options['fields']['field_st_section']['field'] = 'field_st_section';
+$handler->display->display_options['fields']['field_st_section']['relationship'] = 'field_stp_datatel_student_target_id';
+$handler->display->display_options['fields']['field_st_section']['alter']['alter_text'] = 0;
+$handler->display->display_options['fields']['field_st_section']['alter']['make_link'] = 0;
+$handler->display->display_options['fields']['field_st_section']['alter']['absolute'] = 0;
+$handler->display->display_options['fields']['field_st_section']['alter']['external'] = 0;
+$handler->display->display_options['fields']['field_st_section']['alter']['replace_spaces'] = 0;
+$handler->display->display_options['fields']['field_st_section']['alter']['trim_whitespace'] = 0;
+$handler->display->display_options['fields']['field_st_section']['alter']['nl2br'] = 0;
+$handler->display->display_options['fields']['field_st_section']['alter']['word_boundary'] = 1;
+$handler->display->display_options['fields']['field_st_section']['alter']['ellipsis'] = 1;
+$handler->display->display_options['fields']['field_st_section']['alter']['more_link'] = 0;
+$handler->display->display_options['fields']['field_st_section']['alter']['strip_tags'] = 0;
+$handler->display->display_options['fields']['field_st_section']['alter']['trim'] = 0;
+$handler->display->display_options['fields']['field_st_section']['alter']['html'] = 0;
+$handler->display->display_options['fields']['field_st_section']['element_label_colon'] = 0;
+$handler->display->display_options['fields']['field_st_section']['element_default_classes'] = 1;
+$handler->display->display_options['fields']['field_st_section']['hide_empty'] = 0;
+$handler->display->display_options['fields']['field_st_section']['empty_zero'] = 0;
+$handler->display->display_options['fields']['field_st_section']['hide_alter_empty'] = 1;
+$handler->display->display_options['fields']['field_st_section']['field_api_classes'] = 0;
 /* Field: Profile: Expected Graduation */
 $handler->display->display_options['fields']['field_stp_expected_graduation']['id'] = 'field_stp_expected_graduation';
 $handler->display->display_options['fields']['field_stp_expected_graduation']['table'] = 'field_data_field_stp_expected_graduation';
@@ -300,32 +328,6 @@ $handler->display->display_options['fields']['field_stp_expected_graduation']['e
 $handler->display->display_options['fields']['field_stp_expected_graduation']['hide_alter_empty'] = 1;
 $handler->display->display_options['fields']['field_stp_expected_graduation']['type'] = 'taxonomy_term_reference_plain';
 $handler->display->display_options['fields']['field_stp_expected_graduation']['field_api_classes'] = 0;
-/* Field: Profile: Assignment */
-$handler->display->display_options['fields']['field_stp_assignment']['id'] = 'field_stp_assignment';
-$handler->display->display_options['fields']['field_stp_assignment']['table'] = 'field_data_field_stp_assignment';
-$handler->display->display_options['fields']['field_stp_assignment']['field'] = 'field_stp_assignment';
-$handler->display->display_options['fields']['field_stp_assignment']['alter']['alter_text'] = 0;
-$handler->display->display_options['fields']['field_stp_assignment']['alter']['make_link'] = 0;
-$handler->display->display_options['fields']['field_stp_assignment']['alter']['absolute'] = 0;
-$handler->display->display_options['fields']['field_stp_assignment']['alter']['external'] = 0;
-$handler->display->display_options['fields']['field_stp_assignment']['alter']['replace_spaces'] = 0;
-$handler->display->display_options['fields']['field_stp_assignment']['alter']['trim_whitespace'] = 0;
-$handler->display->display_options['fields']['field_stp_assignment']['alter']['nl2br'] = 0;
-$handler->display->display_options['fields']['field_stp_assignment']['alter']['word_boundary'] = 1;
-$handler->display->display_options['fields']['field_stp_assignment']['alter']['ellipsis'] = 1;
-$handler->display->display_options['fields']['field_stp_assignment']['alter']['more_link'] = 0;
-$handler->display->display_options['fields']['field_stp_assignment']['alter']['strip_tags'] = 0;
-$handler->display->display_options['fields']['field_stp_assignment']['alter']['trim'] = 0;
-$handler->display->display_options['fields']['field_stp_assignment']['alter']['html'] = 0;
-$handler->display->display_options['fields']['field_stp_assignment']['element_label_colon'] = 0;
-$handler->display->display_options['fields']['field_stp_assignment']['element_default_classes'] = 1;
-$handler->display->display_options['fields']['field_stp_assignment']['hide_empty'] = 0;
-$handler->display->display_options['fields']['field_stp_assignment']['empty_zero'] = 0;
-$handler->display->display_options['fields']['field_stp_assignment']['hide_alter_empty'] = 1;
-$handler->display->display_options['fields']['field_stp_assignment']['settings'] = array(
-  'link' => 1,
-);
-$handler->display->display_options['fields']['field_stp_assignment']['field_api_classes'] = 0;
 /* Filter criterion: Profile: Type */
 $handler->display->display_options['filters']['type']['id'] = 'type';
 $handler->display->display_options['filters']['type']['table'] = 'profile';
@@ -349,39 +351,42 @@ $handler->display->display_options['filters']['field_stp_lname_value']['expose']
 $handler->display->display_options['filters']['field_stp_lname_value']['expose']['required'] = 0;
 $handler->display->display_options['filters']['field_stp_lname_value']['expose']['multiple'] = FALSE;
 /* Filter criterion: Content: Semester (field_st_semester) */
-$handler->display->display_options['filters']['field_st_semester_tid']['id'] = 'field_st_semester_tid';
-$handler->display->display_options['filters']['field_st_semester_tid']['table'] = 'field_data_field_st_semester';
-$handler->display->display_options['filters']['field_st_semester_tid']['field'] = 'field_st_semester_tid';
-$handler->display->display_options['filters']['field_st_semester_tid']['relationship'] = 'field_stp_datatel_student_target_id';
-$handler->display->display_options['filters']['field_st_semester_tid']['group'] = 1;
-$handler->display->display_options['filters']['field_st_semester_tid']['exposed'] = TRUE;
-$handler->display->display_options['filters']['field_st_semester_tid']['expose']['operator_id'] = 'field_st_semester_tid_op';
-$handler->display->display_options['filters']['field_st_semester_tid']['expose']['label'] = 'Semester';
-$handler->display->display_options['filters']['field_st_semester_tid']['expose']['operator'] = 'field_st_semester_tid_op';
-$handler->display->display_options['filters']['field_st_semester_tid']['expose']['identifier'] = 'field_st_semester_tid';
-$handler->display->display_options['filters']['field_st_semester_tid']['expose']['multiple'] = 1;
-$handler->display->display_options['filters']['field_st_semester_tid']['expose']['reduce'] = 0;
-$handler->display->display_options['filters']['field_st_semester_tid']['reduce_duplicates'] = 0;
-$handler->display->display_options['filters']['field_st_semester_tid']['type'] = 'select';
-$handler->display->display_options['filters']['field_st_semester_tid']['vocabulary'] = 'semesters';
-$handler->display->display_options['filters']['field_st_semester_tid']['error_message'] = 1;
+$handler->display->display_options['filters']['field_st_semester_target_id']['id'] = 'field_st_semester_target_id';
+$handler->display->display_options['filters']['field_st_semester_target_id']['table'] = 'field_data_field_st_semester';
+$handler->display->display_options['filters']['field_st_semester_target_id']['field'] = 'field_st_semester_target_id';
+$handler->display->display_options['filters']['field_st_semester_target_id']['relationship'] = 'field_stp_datatel_student_target_id';
+$handler->display->display_options['filters']['field_st_semester_target_id']['exposed'] = TRUE;
+$handler->display->display_options['filters']['field_st_semester_target_id']['expose']['operator_id'] = 'field_st_semester_target_id_op';
+$handler->display->display_options['filters']['field_st_semester_target_id']['expose']['label'] = 'Semester';
+$handler->display->display_options['filters']['field_st_semester_target_id']['expose']['operator'] = 'field_st_semester_target_id_op';
+$handler->display->display_options['filters']['field_st_semester_target_id']['expose']['identifier'] = 'field_st_semester_target_id';
+$handler->display->display_options['filters']['field_st_semester_target_id']['expose']['multiple'] = 1;
+$handler->display->display_options['filters']['field_st_semester_target_id']['expose']['reduce'] = 0;
 /* Filter criterion: Content: Course (field_st_course) */
-$handler->display->display_options['filters']['field_st_course_tid']['id'] = 'field_st_course_tid';
-$handler->display->display_options['filters']['field_st_course_tid']['table'] = 'field_data_field_st_course';
-$handler->display->display_options['filters']['field_st_course_tid']['field'] = 'field_st_course_tid';
-$handler->display->display_options['filters']['field_st_course_tid']['relationship'] = 'field_stp_datatel_student_target_id';
-$handler->display->display_options['filters']['field_st_course_tid']['group'] = 1;
-$handler->display->display_options['filters']['field_st_course_tid']['exposed'] = TRUE;
-$handler->display->display_options['filters']['field_st_course_tid']['expose']['operator_id'] = 'field_st_course_tid_op';
-$handler->display->display_options['filters']['field_st_course_tid']['expose']['label'] = 'Course';
-$handler->display->display_options['filters']['field_st_course_tid']['expose']['operator'] = 'field_st_course_tid_op';
-$handler->display->display_options['filters']['field_st_course_tid']['expose']['identifier'] = 'field_st_course_tid';
-$handler->display->display_options['filters']['field_st_course_tid']['expose']['multiple'] = 1;
-$handler->display->display_options['filters']['field_st_course_tid']['expose']['reduce'] = 0;
-$handler->display->display_options['filters']['field_st_course_tid']['reduce_duplicates'] = 0;
-$handler->display->display_options['filters']['field_st_course_tid']['type'] = 'select';
-$handler->display->display_options['filters']['field_st_course_tid']['vocabulary'] = 'internship_courses';
-$handler->display->display_options['filters']['field_st_course_tid']['error_message'] = 1;
+$handler->display->display_options['filters']['field_st_course_target_id']['id'] = 'field_st_course_target_id';
+$handler->display->display_options['filters']['field_st_course_target_id']['table'] = 'field_data_field_st_course';
+$handler->display->display_options['filters']['field_st_course_target_id']['field'] = 'field_st_course_target_id';
+$handler->display->display_options['filters']['field_st_course_target_id']['relationship'] = 'field_stp_datatel_student_target_id';
+$handler->display->display_options['filters']['field_st_course_target_id']['exposed'] = TRUE;
+$handler->display->display_options['filters']['field_st_course_target_id']['expose']['operator_id'] = 'field_st_course_target_id_op';
+$handler->display->display_options['filters']['field_st_course_target_id']['expose']['label'] = 'Course';
+$handler->display->display_options['filters']['field_st_course_target_id']['expose']['operator'] = 'field_st_course_target_id_op';
+$handler->display->display_options['filters']['field_st_course_target_id']['expose']['identifier'] = 'field_st_course_target_id';
+$handler->display->display_options['filters']['field_st_course_target_id']['expose']['multiple'] = 1;
+$handler->display->display_options['filters']['field_st_course_target_id']['expose']['reduce'] = 0;
+/* Filter criterion: Content: Section (field_st_section) */
+$handler->display->display_options['filters']['field_st_section_value']['id'] = 'field_st_section_value';
+$handler->display->display_options['filters']['field_st_section_value']['table'] = 'field_data_field_st_section';
+$handler->display->display_options['filters']['field_st_section_value']['field'] = 'field_st_section_value';
+$handler->display->display_options['filters']['field_st_section_value']['relationship'] = 'field_stp_datatel_student_target_id';
+$handler->display->display_options['filters']['field_st_section_value']['operator'] = 'contains';
+$handler->display->display_options['filters']['field_st_section_value']['exposed'] = TRUE;
+$handler->display->display_options['filters']['field_st_section_value']['expose']['operator_id'] = 'field_st_section_value_op';
+$handler->display->display_options['filters']['field_st_section_value']['expose']['label'] = 'Section';
+$handler->display->display_options['filters']['field_st_section_value']['expose']['operator'] = 'field_st_section_value_op';
+$handler->display->display_options['filters']['field_st_section_value']['expose']['identifier'] = 'field_st_section_value';
+$handler->display->display_options['filters']['field_st_section_value']['expose']['required'] = 0;
+$handler->display->display_options['filters']['field_st_section_value']['expose']['multiple'] = FALSE;
 
 /* Display: Page */
 $handler = $view->new_display('page', 'Page', 'page');
