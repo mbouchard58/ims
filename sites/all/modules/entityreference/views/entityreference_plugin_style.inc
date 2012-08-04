@@ -53,11 +53,10 @@ class entityreference_plugin_style extends views_plugin_style {
     // widget, though.
     $results = array();
     $this->view->row_index = 0;
-    foreach ($sets as $title => $records) {
-      foreach ($records as $label => $values) {
-        // Decode html, remove line breaks and extra whitespace
-        //$results[$values->{$id_field_alias}] = preg_replace('/\s\s+/', ' ', str_replace("\n", '', trim(decode_entities(strip_tags($this->row_plugin->render($values))))));
-        $results[$values->{$id_field_alias}] = preg_replace('/\s\s+/', ' ', str_replace("\n", '', decode_entities($this->row_plugin->render($values))));
+    foreach ($sets as $records) {
+      foreach ($records as $values) {
+        // Sanitize html, remove line breaks and extra whitespace.
+        $results[$values->{$id_field_alias}] = filter_xss_admin(preg_replace('/\s\s+/', ' ', str_replace("\n", '', $this->row_plugin->render($values))));
         $this->view->row_index++;
       }
     }

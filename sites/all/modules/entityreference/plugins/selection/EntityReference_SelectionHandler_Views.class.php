@@ -8,7 +8,7 @@ class EntityReference_SelectionHandler_Views implements EntityReference_Selectio
   /**
    * Implements EntityReferenceHandler::getInstance().
    */
-  public static function getInstance($field, $instance) {
+  public static function getInstance($field, $instance = NULL, $entity_type = NULL, $entity = NULL) {
     return new EntityReference_SelectionHandler_Views($field, $instance);
   }
 
@@ -42,7 +42,7 @@ class EntityReference_SelectionHandler_Views implements EntityReference_Selectio
       $form['view']['#element_validate'] = array('entityreference_view_settings_validate');
 
       $options = array('' => '<' . t('none') . '>') + $options;
-      $default = empty($view_settings['view_name']) ? '' : $view_settings['view_name'] . ':' .$view_settings['display_name'];
+      $default = !empty($view_settings['view_name']) ? $view_settings['view_name'] . ':' .$view_settings['display_name'] : '';
       $form['view']['view_and_display'] = array(
         '#type' => 'select',
         '#title' => t('View used to select the entities'),
@@ -51,7 +51,7 @@ class EntityReference_SelectionHandler_Views implements EntityReference_Selectio
         '#description' => '<p>' . t('Choose the view and display that select the entities that can be referenced.<br />Only views with a display of type "Entity Reference" are eligible.') . '</p>',
       );
 
-      $default = empty($view_settings['args']) ? '' : implode(', ', $view_settings['args']);
+      $default = !empty($view_settings['args']) ? implode(', ', $view_settings['args']) : '';
       $form['view']['args'] = array(
         '#type' => 'textfield',
         '#title' => t('View arguments'),
@@ -79,12 +79,13 @@ class EntityReference_SelectionHandler_Views implements EntityReference_Selectio
 
     // Check that the view is valid and the display still exists.
     $this->view = views_get_view($view_name);
-    if (!$this->view || !isset($this->view->display[$display_name])) {
+    if (!$this->view || !isset($this->view->display[$display_name]) || !$this->view->access($display_name)) {
+      watchdog('entityreference', 'The view %view_name is no longer eligible for the %field_name field.', array('%view_name' => $view_name, '%field_name' => $this->instance['label']), WATCHDOG_WARNING);
       return FALSE;
     }
     $this->view->set_display($display_name);
 
-    // Make sure the query is not cached
+    // Make sure the query is not cached.
     $this->view->is_cacheable = FALSE;
 
     // Pass options to the display handler to make them available later.
@@ -95,6 +96,7 @@ class EntityReference_SelectionHandler_Views implements EntityReference_Selectio
       'ids' => $ids,
     );
     $this->view->display_handler->set_option('entityreference_options', $entityreference_options);
+    return TRUE;
   }
 
   /**
@@ -103,10 +105,12 @@ class EntityReference_SelectionHandler_Views implements EntityReference_Selectio
   public function getReferencableEntities($match = NULL, $match_operator = 'CONTAINS', $limit = 0) {
     $display_name = $this->field['settings']['handler_settings']['view']['display_name'];
     $args = $this->field['settings']['handler_settings']['view']['args'];
-    $this->initializeView($match, $match_operator, $limit);
-
-    // Get the results.
-    return $this->view->execute_display($display_name, $args);
+    $result = array();
+    if ($this->initializeView($match, $match_operator, $limit)) {
+      // Get the results.
+      $result = $this->view->execute_display($display_name, $args);
+    }
+    return $result;
   }
 
   /**
@@ -120,11 +124,13 @@ class EntityReference_SelectionHandler_Views implements EntityReference_Selectio
   function validateReferencableEntities(array $ids) {
     $display_name = $this->field['settings']['handler_settings']['view']['display_name'];
     $args = $this->field['settings']['handler_settings']['view']['args'];
-    $this->initializeView(NULL, 'CONTAINS', 0, $ids);
-
-    // Get the results.
-    $entities = $this->view->execute_display($display_name, $args);
-    return array_keys($entities);
+    $result = array();
+    if ($this->initializeView(NULL, 'CONTAINS', 0, $ids)) {
+      // Get the results.
+      $entities = $this->view->execute_display($display_name, $args);
+      $result = array_keys($entities);
+    }
+    return $result;
   }
 
   /**
@@ -157,7 +163,13 @@ function entityreference_view_settings_validate($element, &$form_state, $form) {
   // empty string into an array with one empty string. We'll need an empty array
   // instead.
   $args_string = trim($element['args']['#value']);
-  $args = ($args_string === '') ? array() : array_map('trim', explode(',', $args_string));
+  if ($args_string === '') {
+    $args = array();
+  }
+  else {
+    // array_map is called to trim whitespaces from the arguments.
+    $args = array_map('trim', explode(',', $args_string));
+  }
 
   $value = array('view_name' => $view, 'display_name' => $display, 'args' => $args);
   form_set_value($element, $value, $form_state);

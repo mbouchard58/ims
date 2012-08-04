@@ -93,7 +93,7 @@ function entityreference_views_plugins() {
     'display' => array(
       'entityreference' => array(
         'title' => t('Entity Reference'),
-        'admin' => t('Entity Reference'),
+        'admin' => t('Entity Reference Source'),
         'help' => 'Selects referenceable entities for an entity reference field',
         'handler' => 'entityreference_plugin_display',
         'uses hook menu' => FALSE,

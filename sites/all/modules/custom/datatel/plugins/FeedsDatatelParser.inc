@@ -15,19 +15,14 @@ class FeedsDatatelParser extends FeedsParser {
   /**
    * Implements FeedsParser::parse().
    */
-  public function parse(FeedsSource $source, FeedsFetcherResult $fetcher_result) {
-    $regCount = 0;
-
+ public function parse(FeedsSource $source, FeedsFetcherResult $fetcher_result) {
     //get vocabulary ID for "Internship Courses" vocabulary
     // we only want students who are taking courses that have internships
     $vid = taxonomy_vocabulary_machine_name_load("internship_courses")->vid;
 
     //get all the terms in the vocabulary. there should only be a few
     $terms = taxonomy_get_tree($vid);
-
-    //dprint_r($terms);
-
-    //dvr($terms, $return = FALSE, $name = NULL);
+  
     // create a list of all the course names from the taxonomy tree
     $termNames = array();
     foreach ($terms as $term) {
@@ -40,19 +35,21 @@ class FeedsDatatelParser extends FeedsParser {
     $result = new FeedsParserResult();
 
     $sections = $xml->xpath('course_sections/course_section');
-    //kpr($sections, $return = FALSE, $name = NULL);
 
     foreach ($sections as $section) {
       $courseName = (string) $section->section_info['course_name'];
       $t_key = array_search($courseName, $termNames);
       if ($t_key) {
-        $guid = (string) $section->section_info['sec_name'] . "-";
+        /* 
+         $guid = (string) $section->section_info['sec_name'] . "-";
         $guid .= $section->term['term_id']; 
+        */
         $secNo = (string) $section->section_info['section_no'];
 	
         $regItems = $section->xpath('registration/reg_item');
         foreach ($regItems as $regItem) {
-          $student['guid'] = $guid . "-" . $regItem->demographics['simmons_login'];
+          //$student['guid'] = $guid . "-" . $regItem->demographics['simmons_login'];
+          $student['guid'] =  (string) $regItem->demographics['simmons_login'];
           $student['id'] = (string) $regItem->demographics['simmons_login'];
           $student['title'] = (string) $regItem->demographics['first_name'];
           $student['title'] .= " ". (string) $regItem->demographics['last_name'];
@@ -64,8 +61,9 @@ class FeedsDatatelParser extends FeedsParser {
           $student['semester'] = $active_tid;
           $result->items[] = $student;
           unset($student);
+         
         } // close:foreach($regItems as $regItem)
-      } // close:if (in_array...)
+      } // close:if (in_array...) 
     } // close:foreach ($sections as $section) 
     return $result;
   } // close: function parse()
