@@ -404,7 +404,7 @@ function ims_form_alter(&$form, &$form_state, $formID) {
      }
      $node = node_load($nid);
      if (isset($node)) {     
-       if (strlen($node->field_org_repository['und'][0]['value']) > 0) {
+       if (!empty($node->field_org_repository)) {
          $org_title = trim(substr($node->title, 0, 45));  
          $org_title .= " - " . trim(substr($node->field_org_repository['und'][0]['value'], 0, 30));
          $form['profile_supervisor']['field_sup_org']['und']['#options'][$nid] = $org_title;
