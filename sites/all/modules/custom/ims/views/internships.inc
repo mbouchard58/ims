@@ -2137,6 +2137,11 @@ $handler->display->display_options['filters']['field_org_hours_tid']['reduce_dup
 $handler->display->display_options['filters']['field_org_hours_tid']['type'] = 'select';
 $handler->display->display_options['filters']['field_org_hours_tid']['vocabulary'] = 'work_hours';
 $handler->display->display_options['filters']['field_org_hours_tid']['error_message'] = 0;
+/* Filter criterion: Content: Arranged Student (field_int_arr_desc) */
+$handler->display->display_options['filters']['field_int_arr_desc_value']['id'] = 'field_int_arr_desc_value';
+$handler->display->display_options['filters']['field_int_arr_desc_value']['table'] = 'field_data_field_int_arr_desc';
+$handler->display->display_options['filters']['field_int_arr_desc_value']['field'] = 'field_int_arr_desc_value';
+$handler->display->display_options['filters']['field_int_arr_desc_value']['operator'] = 'empty';
 $handler->display->display_options['path'] = 'internships';
 $handler->display->display_options['menu']['type'] = 'normal';
 $handler->display->display_options['menu']['title'] = 'Internships';

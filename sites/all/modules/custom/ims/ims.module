@@ -249,10 +249,16 @@ function ims_form_alter(&$form, &$form_state, $formID) {
       }
       $super_profile = $profile_values['supervisor'];
       
-      $form['field_int_org_id']['und']['#default_value'] = array($super_profile->field_sup_org['und'][0]['target_id']);     
-      $form['field_int_sup_name']['und'][0]['value']['#default_value'] = $super_profile->field_sup_name['und'][0]['value'];
-      $form['field_int_sup_phone']['und'][0]['value']['#default_value'] = $super_profile->field_sup_phone['und'][0]['value'];
-      $form['field_int_sup_email']['und'][0]['email']['#default_value'] = $super_profile->field_sup_email['und'][0]['email'];
+      $form['field_int_org_id']['und']['#default_value'] = array($super_profile->field_sup_org['und'][0]['target_id']);  
+      if (!empty($super_profile->field_sup_name)) {
+        $form['field_int_sup_name']['und'][0]['value']['#default_value'] = $super_profile->field_sup_name['und'][0]['value'];
+      }
+      if (!empty($super_profile->field_sup_phone)) {
+        $form['field_int_sup_phone']['und'][0]['value']['#default_value'] = $super_profile->field_sup_phone['und'][0]['value'];
+      }
+      if (!empty($super_profile->field_sup_email)) {
+        $form['field_int_sup_email']['und'][0]['email']['#default_value'] = $super_profile->field_sup_email['und'][0]['email'];
+      }
     }
   }
   else {

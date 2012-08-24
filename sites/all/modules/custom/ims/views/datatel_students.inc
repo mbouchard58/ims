@@ -115,7 +115,7 @@ $handler->display->display_options['empty']['area']['label'] = 'No Results';
 $handler->display->display_options['empty']['area']['empty'] = FALSE;
 $handler->display->display_options['empty']['area']['content'] = '<p>
 <br />
-<h3>The are no students matching the selection criteria.</h3>
+<h3>There are no students matching the selection criteria.</h3>
 </p>';
 $handler->display->display_options['empty']['area']['format'] = 'full_html';
 $handler->display->display_options['empty']['area']['tokenize'] = 0;
