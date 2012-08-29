@@ -886,7 +886,7 @@ function print_link_allowed($args) {
 function print_query_string_encode($query, $exclude = array(), $parent = '') {
   $params = array();
   foreach ($query as $key => $value) {
-    if (in_array($key, $exclude)) {
+    if (in_array($key, $exclude, true)) {
       continue;
     }
 

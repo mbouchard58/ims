@@ -1,0 +1,185 @@
+
+body {
+  margin: 1em;
+  background-color: #fff;
+  font-family: sans-serif;
+}
+th {
+  text-align: left; /* LTR */
+  color: #006;
+  border-bottom: 1px solid #ccc;
+}
+tr.odd {
+  background-color: #ddd;
+}
+tr.even {
+  background-color: #fff;
+}
+td {
+  padding: 5px;
+}
+#menu {
+  visibility: hidden;
+}
+#main {
+  margin: 1em;
+}
+a:link {color: #000;}
+a:visited {color: #000;}
+a:hover {color: #00f;}
+a:link img, a:visited img {border: 0;}
+.print-footnote {font-size: xx-small;}
+img.print-logo {border: 0;}
+.print-site_name {}
+.print-breadcrumb {display: none;}
+.print-title {}
+.print-submitted {font-size: small;}
+.print-created {font-size: small;}
+.print-taxonomy {
+  text-align: right;
+}
+.print-taxonomy li {display: inline;}
+.print-content {}
+/*
+.print-hr {
+  border: 0;
+  height: 1px;
+  width: 100%;
+  color: #9E9E9E;
+  background-color: #9E9E9E;
+}
+*/
+.print-hr {
+    visibility: hidden;
+}
+.print-message {
+  border: medium dotted blue;
+  padding: 1em;
+}
+.print-source_url {font-size: small;}
+.print-links {font-size: small;}
+.print-footer {text-align: center;}
+
+/*
+ * CSS specific to all-choices view
+ */
+ .view-all-choices .view-content .view-grouping-0 {
+     margin-bottom: 10px;
+ }
+.view-all-choices>.view-filters {
+    display: none;
+}
+.view-all-choices .view-grouping>.view-grouping-header {
+    float:left;
+    font-weight: bold;
+
+}
+.view-all-choices .view-content h3 {
+    clear: both;
+    float: none;
+    font-size: 1.0em;
+    font-weight: normal;
+}
+.all-choices-rows .views-field-field-ch-rank {
+    content: ".";
+    clear: both;
+    float: none;
+    display: block;
+    height: 0;
+    visibility: hidden;
+}
+.all-choices-rows .views-field-title-1 {
+    padding-right: 15px;
+}
+.all-choices-rows .views-field-field-ch-notes {
+    display: inline;
+}
+.view-all-choices>.view-content>.view-grouping>.view-grouping-header:after {
+    content: ", ";
+    padding: 2px;
+}
+.view-all-choices>.view-content>.view-grouping>.view-grouping-content>.view-grouping:after {
+    content: "_____________________________________________________________________________________________________________________________";
+    margin-top: 10px;
+    font-weight: normal;
+}
+
+/*
+ * CSS specific to choices-by-org view
+ 
+ .view-choices-by-org>.view-filters {
+    display: none;
+}
+*/
+.view-choices-by-org .view-content .view-grouping>.view-group-level-0 {
+    float: left;
+    font-weight: bold;
+    width: 20em;
+}
+.view-choices-by-org .view-content .view-grouping>.view-group-level-1 {
+    float: left;
+    font-weight: bold;
+    width: 20em;
+}
+/* to select second and subsequent internships for the same organization */
+.view-choices-by-org .view-content .view-grouping-0>.view-grouping-content>.view-grouping-1 + .view-grouping-1>.view-group-level-1 {
+    margin-left: 20em;
+    font-weight: bold;
+    width: 20em;
+}
+.view-choices-by-org .view-content .view-grouping>.view-group-level-2 {
+    float: left;
+    font-weight: bold;
+    width: 15em;
+}
+.view-choices-by-org .view-content h3 {
+    font-weight: bold;
+    font-size: 1.0em;
+}
+
+/* clear floats from heading groups (Org, Internship, Supervisor Name, Positions). Start students on a new line. */
+.view-choices-by-org .view-content .choices-by-org-rows:before {
+    font-weight: normal;
+    content: ".";
+    clear: both;
+    float: none;
+    display: block;
+    height: 0;
+    visibility: hidden;
+}
+/* start student choices on a new line */
+.view-choices-by-org .view-content .choices-by-org-rows>.views-field-field-stp-lname {
+    float:left;
+    width: 5em;
+}
+/* put a comma after the student's last name 
+.view-choices-by-org .view-content .choices-by-org-rows>.views-field-field-stp-lname>.field-content:after {
+    content: ", ";
+    padding-right: 5px;
+}
+*/
+.view-choices-by-org .view-content .choices-by-org-rows>.views-field-field-stp-fname {
+    float:left;
+    width: 5em;
+}
+.view-choices-by-org .view-content .choices-by-org-rows>.views-field-field-ch-rank {
+    float:left;
+    width: 3em;
+    padding-right: 1em;
+}
+.view-choices-by-org .view-content .choices-by-org-rows>.views-field-field-ch-rank>.field-content {
+    text-align: right;
+}
+.view-choices-by-org .view-content .choices-by-org-rows>.views-field-field-ch-notes:after {
+    content: ".";
+    clear: both;
+    float: none;
+    display: block;
+    height: 0;
+    visibility: hidden;
+}
+.view-choices-by-org>.view-content>.view-grouping-0:after {
+    content: "_____________________________________________________________________________________________________________________________";
+    margin-top: 10px;
+    font-weight: normal;
+}

@@ -394,4 +394,105 @@ $handler->display->display_options['path'] = 'student-profiles';
 $handler->display->display_options['menu']['type'] = 'normal';
 $handler->display->display_options['menu']['title'] = 'Student Profiles';
 $handler->display->display_options['menu']['name'] = 'main-menu';
+
+/* Display: No Choice */
+$handler = $view->new_display('page', 'No Choice', 'page_1');
+$handler->display->display_options['display_description'] = 'A list of students who have not made at least one choice';
+$handler->display->display_options['defaults']['use_ajax'] = FALSE;
+$handler->display->display_options['defaults']['pager'] = FALSE;
+$handler->display->display_options['pager']['type'] = 'none';
+$handler->display->display_options['pager']['options']['offset'] = '0';
+$handler->display->display_options['defaults']['relationships'] = FALSE;
+/* Relationship: User */
+$handler->display->display_options['relationships']['user']['id'] = 'user';
+$handler->display->display_options['relationships']['user']['table'] = 'profile';
+$handler->display->display_options['relationships']['user']['field'] = 'user';
+$handler->display->display_options['relationships']['user']['ui_name'] = 'User';
+$handler->display->display_options['relationships']['user']['required'] = 1;
+/* Relationship: Student */
+$handler->display->display_options['relationships']['field_stp_datatel_student_target_id']['id'] = 'field_stp_datatel_student_target_id';
+$handler->display->display_options['relationships']['field_stp_datatel_student_target_id']['table'] = 'field_data_field_stp_datatel_student';
+$handler->display->display_options['relationships']['field_stp_datatel_student_target_id']['field'] = 'field_stp_datatel_student_target_id';
+$handler->display->display_options['relationships']['field_stp_datatel_student_target_id']['ui_name'] = 'Student';
+$handler->display->display_options['relationships']['field_stp_datatel_student_target_id']['label'] = 'Student';
+$handler->display->display_options['relationships']['field_stp_datatel_student_target_id']['required'] = 1;
+/* Relationship: Choice */
+$handler->display->display_options['relationships']['reverse_field_ch_student_node']['id'] = 'reverse_field_ch_student_node';
+$handler->display->display_options['relationships']['reverse_field_ch_student_node']['table'] = 'profile';
+$handler->display->display_options['relationships']['reverse_field_ch_student_node']['field'] = 'reverse_field_ch_student_node';
+$handler->display->display_options['relationships']['reverse_field_ch_student_node']['ui_name'] = 'Choice';
+$handler->display->display_options['relationships']['reverse_field_ch_student_node']['label'] = 'Choice';
+$handler->display->display_options['relationships']['reverse_field_ch_student_node']['required'] = 0;
+$handler->display->display_options['defaults']['filters'] = FALSE;
+/* Filter criterion: Profile: Type */
+$handler->display->display_options['filters']['type']['id'] = 'type';
+$handler->display->display_options['filters']['type']['table'] = 'profile';
+$handler->display->display_options['filters']['type']['field'] = 'type';
+$handler->display->display_options['filters']['type']['value'] = array(
+  'student_profile' => 'student_profile',
+);
+$handler->display->display_options['filters']['type']['group'] = 1;
+/* Filter criterion: Profile: Last Name (field_stp_lname) */
+$handler->display->display_options['filters']['field_stp_lname_value']['id'] = 'field_stp_lname_value';
+$handler->display->display_options['filters']['field_stp_lname_value']['table'] = 'field_data_field_stp_lname';
+$handler->display->display_options['filters']['field_stp_lname_value']['field'] = 'field_stp_lname_value';
+$handler->display->display_options['filters']['field_stp_lname_value']['operator'] = 'contains';
+$handler->display->display_options['filters']['field_stp_lname_value']['group'] = 1;
+$handler->display->display_options['filters']['field_stp_lname_value']['exposed'] = TRUE;
+$handler->display->display_options['filters']['field_stp_lname_value']['expose']['operator_id'] = 'field_stp_lname_value_op';
+$handler->display->display_options['filters']['field_stp_lname_value']['expose']['label'] = 'Last Name ';
+$handler->display->display_options['filters']['field_stp_lname_value']['expose']['use_operator'] = 1;
+$handler->display->display_options['filters']['field_stp_lname_value']['expose']['operator'] = 'field_stp_lname_value_op';
+$handler->display->display_options['filters']['field_stp_lname_value']['expose']['identifier'] = 'field_stp_lname_value';
+$handler->display->display_options['filters']['field_stp_lname_value']['expose']['required'] = 0;
+$handler->display->display_options['filters']['field_stp_lname_value']['expose']['multiple'] = FALSE;
+/* Filter criterion: Content: Semester (field_st_semester) */
+$handler->display->display_options['filters']['field_st_semester_target_id']['id'] = 'field_st_semester_target_id';
+$handler->display->display_options['filters']['field_st_semester_target_id']['table'] = 'field_data_field_st_semester';
+$handler->display->display_options['filters']['field_st_semester_target_id']['field'] = 'field_st_semester_target_id';
+$handler->display->display_options['filters']['field_st_semester_target_id']['relationship'] = 'field_stp_datatel_student_target_id';
+$handler->display->display_options['filters']['field_st_semester_target_id']['exposed'] = TRUE;
+$handler->display->display_options['filters']['field_st_semester_target_id']['expose']['operator_id'] = 'field_st_semester_target_id_op';
+$handler->display->display_options['filters']['field_st_semester_target_id']['expose']['label'] = 'Semester';
+$handler->display->display_options['filters']['field_st_semester_target_id']['expose']['operator'] = 'field_st_semester_target_id_op';
+$handler->display->display_options['filters']['field_st_semester_target_id']['expose']['identifier'] = 'Semester';
+$handler->display->display_options['filters']['field_st_semester_target_id']['expose']['multiple'] = 1;
+$handler->display->display_options['filters']['field_st_semester_target_id']['expose']['reduce'] = 0;
+/* Filter criterion: Content: Course (field_st_course) */
+$handler->display->display_options['filters']['field_st_course_target_id']['id'] = 'field_st_course_target_id';
+$handler->display->display_options['filters']['field_st_course_target_id']['table'] = 'field_data_field_st_course';
+$handler->display->display_options['filters']['field_st_course_target_id']['field'] = 'field_st_course_target_id';
+$handler->display->display_options['filters']['field_st_course_target_id']['relationship'] = 'field_stp_datatel_student_target_id';
+$handler->display->display_options['filters']['field_st_course_target_id']['exposed'] = TRUE;
+$handler->display->display_options['filters']['field_st_course_target_id']['expose']['operator_id'] = 'field_st_course_target_id_op';
+$handler->display->display_options['filters']['field_st_course_target_id']['expose']['label'] = 'Course';
+$handler->display->display_options['filters']['field_st_course_target_id']['expose']['operator'] = 'field_st_course_target_id_op';
+$handler->display->display_options['filters']['field_st_course_target_id']['expose']['identifier'] = 'field_st_course_target_id';
+$handler->display->display_options['filters']['field_st_course_target_id']['expose']['multiple'] = 1;
+$handler->display->display_options['filters']['field_st_course_target_id']['expose']['reduce'] = 0;
+/* Filter criterion: Content: Section (field_st_section) */
+$handler->display->display_options['filters']['field_st_section_value']['id'] = 'field_st_section_value';
+$handler->display->display_options['filters']['field_st_section_value']['table'] = 'field_data_field_st_section';
+$handler->display->display_options['filters']['field_st_section_value']['field'] = 'field_st_section_value';
+$handler->display->display_options['filters']['field_st_section_value']['relationship'] = 'field_stp_datatel_student_target_id';
+$handler->display->display_options['filters']['field_st_section_value']['operator'] = 'contains';
+$handler->display->display_options['filters']['field_st_section_value']['exposed'] = TRUE;
+$handler->display->display_options['filters']['field_st_section_value']['expose']['operator_id'] = 'field_st_section_value_op';
+$handler->display->display_options['filters']['field_st_section_value']['expose']['label'] = 'Section';
+$handler->display->display_options['filters']['field_st_section_value']['expose']['operator'] = 'field_st_section_value_op';
+$handler->display->display_options['filters']['field_st_section_value']['expose']['identifier'] = 'field_st_section_value';
+$handler->display->display_options['filters']['field_st_section_value']['expose']['required'] = 0;
+$handler->display->display_options['filters']['field_st_section_value']['expose']['multiple'] = FALSE;
+/* Filter criterion: Content: Student Profile (field_ch_student) */
+$handler->display->display_options['filters']['field_ch_student_target_id']['id'] = 'field_ch_student_target_id';
+$handler->display->display_options['filters']['field_ch_student_target_id']['table'] = 'field_data_field_ch_student';
+$handler->display->display_options['filters']['field_ch_student_target_id']['field'] = 'field_ch_student_target_id';
+$handler->display->display_options['filters']['field_ch_student_target_id']['relationship'] = 'reverse_field_ch_student_node';
+$handler->display->display_options['filters']['field_ch_student_target_id']['operator'] = 'empty';
+$handler->display->display_options['path'] = 'students-no-choice';
+$handler->display->display_options['menu']['type'] = 'normal';
+$handler->display->display_options['menu']['title'] = 'No Choice';
+$handler->display->display_options['menu']['description'] = 'Students without at least one choice';
+$handler->display->display_options['menu']['weight'] = '0';
+$handler->display->display_options['menu']['context'] = 0;
 $views[$view->name] = $view;
