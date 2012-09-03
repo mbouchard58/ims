@@ -3,6 +3,7 @@
 /*
  * Custom code for GSLIS IMS app
  */
+
 /*
  * ims_add_org_acl
  * add update permission to an organization for a particular user
@@ -262,7 +263,7 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     }
   }
   else {
-    // build the student profile list for the assignment drop-down
+    // build the student list for the assignment drop-down
     $form['field_int_assignment']['und']['#options'] = array();
     $form['field_int_assignment']['und']['#options']['_none'] = "- None -";
     
@@ -426,15 +427,18 @@ function ims_form_alter(&$form, &$form_state, $formID) {
    $form['#submit'] = $submit_functions;
   } 
  } 
-   /*
+/**
+* @file
+* Truncate and redisplay the single assignment.  We don't want the assignment changed from this end.
+* Implements hook_form_FORM_ID_alter().
+**/
  function ims_form_student_node_form_alter(&$form, &$form_state) {
   // truncate the dropdown.
-
-  $form['profile_student_profile']['field_stp_assignment']['und']['#options'] = array();
+  $form['field_st_assignment']['und']['#options'] = array();
 
   // test to see if the student has an assignment, if no just stuff '- None -' into the drop down.
-  if (!empty($form['profile_student_profile']['field_stp_assignment']['und']['#default_value'])) {
-    $nid = $form['profile_student_profile']['field_stp_assignment']['und']['#default_value'][0];
+  if (!empty($form['field_st_assignment']['und']['#default_value'])) {
+    $nid = $form['field_st_assignment']['und']['#default_value'][0];
     // load the internship node to get the title
     $node = node_load($nid);
     
@@ -449,16 +453,16 @@ function ims_form_alter(&$form, &$form_state, $formID) {
         $title = $node->title . " - ";
       }
       $title .= $ref_title;
-      $form['profile_student_profile']['field_stp_assignment']['und']['#options'][$nid] = $title;
+      $form['field_st_assignment']['und']['#options'][$nid] = $title;
       
     }
   }
   else {
-   $form['profile_student_profile']['field_stp_assignment']['und']['#options']['_none'] = '- None -';
+   $form['field_st_assignment']['und']['#options']['_none'] = '- None -';
   }  
  
  } 
- */
+
 /**
 * @file
 * Specifies rules for restricting student user registration based on email addr found in datatel student table
@@ -871,6 +875,26 @@ function ims_user_submit($form, &$form_state) {
      $node->uid = $uid;
      node_save($node);
      
+     //get vocabulary ID for "Campus" vocabulary
+     // we want to set the student's campus based on the course section in which she is enrolled.
+     $vid = taxonomy_vocabulary_machine_name_load("campus")->vid;
+
+     //get all the terms in the vocabulary. there should only be a few
+     $terms = taxonomy_get_tree($vid, $parent = 0, $max_depth = NULL, $load_entities = TRUE);
+  
+     $campus_tid = NULL;
+     
+     // compare section from student record with campus taxonomy record, if found assign campus
+     foreach ($terms as $term) {
+       $sections = $term->field_cmp_section['und'];
+       foreach ($sections as $section) {
+         if ($node->field_st_section['und'][0]['value'] == $section['value']) {
+           $campus_tid = $term->tid;
+           break;
+         }
+       }
+       if ($campus_tid) break;
+     }
      // create profile object
      $profile = profile_create(array('user' => $uid, 'type' => 'student_profile'));
      // assign student ID, stored in $t_role[1] at validation time
@@ -879,6 +903,10 @@ function ims_user_submit($form, &$form_state) {
      $profile->field_stp_fname['und'][0]['value'] = (string) $node->field_st_fname['und'][0]['value'];
      // assign default last name
      $profile->field_stp_lname['und'][0]['value'] = (string) $node->field_st_lname['und'][0]['value'];
+     // assign default campus
+     if ($campus_tid) {
+       $profile->field_stp_campus['und'][0]['tid'] = $campus_tid;
+     }
 
      // save profile
      profile2_save($profile);
@@ -983,3 +1011,9 @@ function tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field
   $entities = tedbow_utils_find_entities_with_field_value($entity_type, $bundle, $field_name, $value, $column, $access);
   return array_shift($entities);
 }
+/* debugging function for displaying $form and $form_state; commented for production
+function ims_form_alter(&$form, &$form_state) {
+ kpr($form);
+ kpr($form_state);
+}
+*/

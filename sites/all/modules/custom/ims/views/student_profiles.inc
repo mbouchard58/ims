@@ -397,6 +397,8 @@ $handler->display->display_options['menu']['name'] = 'main-menu';
 
 /* Display: No Choice */
 $handler = $view->new_display('page', 'No Choice', 'page_1');
+$handler->display->display_options['defaults']['title'] = FALSE;
+$handler->display->display_options['title'] = 'Student without a choice';
 $handler->display->display_options['display_description'] = 'A list of students who have not made at least one choice';
 $handler->display->display_options['defaults']['use_ajax'] = FALSE;
 $handler->display->display_options['defaults']['pager'] = FALSE;
@@ -489,6 +491,14 @@ $handler->display->display_options['filters']['field_ch_student_target_id']['tab
 $handler->display->display_options['filters']['field_ch_student_target_id']['field'] = 'field_ch_student_target_id';
 $handler->display->display_options['filters']['field_ch_student_target_id']['relationship'] = 'reverse_field_ch_student_node';
 $handler->display->display_options['filters']['field_ch_student_target_id']['operator'] = 'empty';
+$handler->display->display_options['filters']['field_ch_student_target_id']['expose']['operator_id'] = 'field_ch_student_target_id_op';
+$handler->display->display_options['filters']['field_ch_student_target_id']['expose']['label'] = 'Student Profile (field_ch_student)';
+$handler->display->display_options['filters']['field_ch_student_target_id']['expose']['use_operator'] = FALSE;
+$handler->display->display_options['filters']['field_ch_student_target_id']['expose']['operator'] = 'field_ch_student_target_id_op';
+$handler->display->display_options['filters']['field_ch_student_target_id']['expose']['identifier'] = 'field_ch_student_target_id';
+$handler->display->display_options['filters']['field_ch_student_target_id']['expose']['required'] = FALSE;
+$handler->display->display_options['filters']['field_ch_student_target_id']['expose']['remember'] = FALSE;
+$handler->display->display_options['filters']['field_ch_student_target_id']['expose']['multiple'] = FALSE;
 $handler->display->display_options['path'] = 'students-no-choice';
 $handler->display->display_options['menu']['type'] = 'normal';
 $handler->display->display_options['menu']['title'] = 'No Choice';

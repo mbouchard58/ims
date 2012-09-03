@@ -11,7 +11,7 @@ $view->disabled = FALSE; /* Edit this to true to make a default view disabled in
 
 /* Display: Master */
 $handler = $view->new_display('default', 'Master', 'default');
-$handler->display->display_options['title'] = 'All LIS 438 Student Choices for the Current Semester';
+$handler->display->display_options['title'] = 'Choices by Student';
 $handler->display->display_options['access']['type'] = 'role';
 $handler->display->display_options['access']['role'] = array(
   3 => '3',
@@ -39,7 +39,22 @@ $handler->display->display_options['style_options']['grouping'] = array(
     'rendered_strip' => 0,
   ),
   2 => array(
+    'field' => 'field_stp_campus',
+    'rendered' => 1,
+    'rendered_strip' => 0,
+  ),
+  3 => array(
+    'field' => 'field_stp_location',
+    'rendered' => 1,
+    'rendered_strip' => 0,
+  ),
+  4 => array(
     'field' => 'field_stp_transit_req',
+    'rendered' => 1,
+    'rendered_strip' => 0,
+  ),
+  5 => array(
+    'field' => 'field_stp_career_goals',
     'rendered' => 1,
     'rendered_strip' => 0,
   ),
@@ -49,7 +64,10 @@ $handler->display->display_options['row_plugin'] = 'fields';
 $handler->display->display_options['row_options']['inline'] = array(
   'field_stp_lname' => 'field_stp_lname',
   'field_stp_fname' => 'field_stp_fname',
+  'field_stp_campus' => 'field_stp_campus',
+  'field_stp_location' => 'field_stp_location',
   'field_stp_transit_req' => 'field_stp_transit_req',
+  'field_stp_career_goals' => 'field_stp_career_goals',
   'field_ch_rank' => 'field_ch_rank',
   'title_1' => 'title_1',
   'field_ch_notes' => 'field_ch_notes',
@@ -87,6 +105,14 @@ $handler->display->display_options['relationships']['field_int_semester_target_i
 $handler->display->display_options['relationships']['field_int_semester_target_id']['ui_name'] = 'Semester';
 $handler->display->display_options['relationships']['field_int_semester_target_id']['label'] = 'Semester';
 $handler->display->display_options['relationships']['field_int_semester_target_id']['required'] = 1;
+/* Relationship: Student */
+$handler->display->display_options['relationships']['field_stp_datatel_student_target_id']['id'] = 'field_stp_datatel_student_target_id';
+$handler->display->display_options['relationships']['field_stp_datatel_student_target_id']['table'] = 'field_data_field_stp_datatel_student';
+$handler->display->display_options['relationships']['field_stp_datatel_student_target_id']['field'] = 'field_stp_datatel_student_target_id';
+$handler->display->display_options['relationships']['field_stp_datatel_student_target_id']['relationship'] = 'field_ch_student_target_id';
+$handler->display->display_options['relationships']['field_stp_datatel_student_target_id']['ui_name'] = 'Student';
+$handler->display->display_options['relationships']['field_stp_datatel_student_target_id']['label'] = 'Student';
+$handler->display->display_options['relationships']['field_stp_datatel_student_target_id']['required'] = 1;
 /* Field: Profile: Last Name */
 $handler->display->display_options['fields']['field_stp_lname']['id'] = 'field_stp_lname';
 $handler->display->display_options['fields']['field_stp_lname']['table'] = 'field_data_field_stp_lname';
@@ -139,12 +165,68 @@ $handler->display->display_options['fields']['field_stp_fname']['hide_empty'] = 
 $handler->display->display_options['fields']['field_stp_fname']['empty_zero'] = 0;
 $handler->display->display_options['fields']['field_stp_fname']['hide_alter_empty'] = 1;
 $handler->display->display_options['fields']['field_stp_fname']['field_api_classes'] = 0;
+/* Field: Profile: Campus */
+$handler->display->display_options['fields']['field_stp_campus']['id'] = 'field_stp_campus';
+$handler->display->display_options['fields']['field_stp_campus']['table'] = 'field_data_field_stp_campus';
+$handler->display->display_options['fields']['field_stp_campus']['field'] = 'field_stp_campus';
+$handler->display->display_options['fields']['field_stp_campus']['relationship'] = 'field_ch_student_target_id';
+$handler->display->display_options['fields']['field_stp_campus']['label'] = '';
+$handler->display->display_options['fields']['field_stp_campus']['exclude'] = TRUE;
+$handler->display->display_options['fields']['field_stp_campus']['alter']['alter_text'] = 0;
+$handler->display->display_options['fields']['field_stp_campus']['alter']['make_link'] = 0;
+$handler->display->display_options['fields']['field_stp_campus']['alter']['absolute'] = 0;
+$handler->display->display_options['fields']['field_stp_campus']['alter']['external'] = 0;
+$handler->display->display_options['fields']['field_stp_campus']['alter']['replace_spaces'] = 0;
+$handler->display->display_options['fields']['field_stp_campus']['alter']['trim_whitespace'] = 0;
+$handler->display->display_options['fields']['field_stp_campus']['alter']['nl2br'] = 0;
+$handler->display->display_options['fields']['field_stp_campus']['alter']['word_boundary'] = 1;
+$handler->display->display_options['fields']['field_stp_campus']['alter']['ellipsis'] = 1;
+$handler->display->display_options['fields']['field_stp_campus']['alter']['more_link'] = 0;
+$handler->display->display_options['fields']['field_stp_campus']['alter']['strip_tags'] = 0;
+$handler->display->display_options['fields']['field_stp_campus']['alter']['trim'] = 0;
+$handler->display->display_options['fields']['field_stp_campus']['alter']['html'] = 0;
+$handler->display->display_options['fields']['field_stp_campus']['element_type'] = 'span';
+$handler->display->display_options['fields']['field_stp_campus']['element_class'] = 'all-choices-campus';
+$handler->display->display_options['fields']['field_stp_campus']['element_label_colon'] = FALSE;
+$handler->display->display_options['fields']['field_stp_campus']['element_default_classes'] = 1;
+$handler->display->display_options['fields']['field_stp_campus']['hide_empty'] = 0;
+$handler->display->display_options['fields']['field_stp_campus']['empty_zero'] = 0;
+$handler->display->display_options['fields']['field_stp_campus']['hide_alter_empty'] = 1;
+$handler->display->display_options['fields']['field_stp_campus']['field_api_classes'] = 0;
+/* Field: Profile: Location */
+$handler->display->display_options['fields']['field_stp_location']['id'] = 'field_stp_location';
+$handler->display->display_options['fields']['field_stp_location']['table'] = 'field_data_field_stp_location';
+$handler->display->display_options['fields']['field_stp_location']['field'] = 'field_stp_location';
+$handler->display->display_options['fields']['field_stp_location']['relationship'] = 'field_ch_student_target_id';
+$handler->display->display_options['fields']['field_stp_location']['label'] = '';
+$handler->display->display_options['fields']['field_stp_location']['exclude'] = TRUE;
+$handler->display->display_options['fields']['field_stp_location']['alter']['alter_text'] = 0;
+$handler->display->display_options['fields']['field_stp_location']['alter']['make_link'] = 0;
+$handler->display->display_options['fields']['field_stp_location']['alter']['absolute'] = 0;
+$handler->display->display_options['fields']['field_stp_location']['alter']['external'] = 0;
+$handler->display->display_options['fields']['field_stp_location']['alter']['replace_spaces'] = 0;
+$handler->display->display_options['fields']['field_stp_location']['alter']['trim_whitespace'] = 0;
+$handler->display->display_options['fields']['field_stp_location']['alter']['nl2br'] = 0;
+$handler->display->display_options['fields']['field_stp_location']['alter']['word_boundary'] = 1;
+$handler->display->display_options['fields']['field_stp_location']['alter']['ellipsis'] = 1;
+$handler->display->display_options['fields']['field_stp_location']['alter']['more_link'] = 0;
+$handler->display->display_options['fields']['field_stp_location']['alter']['strip_tags'] = 0;
+$handler->display->display_options['fields']['field_stp_location']['alter']['trim'] = 0;
+$handler->display->display_options['fields']['field_stp_location']['alter']['html'] = 0;
+$handler->display->display_options['fields']['field_stp_location']['element_type'] = 'span';
+$handler->display->display_options['fields']['field_stp_location']['element_class'] = 'all-choices-location';
+$handler->display->display_options['fields']['field_stp_location']['element_label_colon'] = FALSE;
+$handler->display->display_options['fields']['field_stp_location']['element_default_classes'] = 1;
+$handler->display->display_options['fields']['field_stp_location']['hide_empty'] = 0;
+$handler->display->display_options['fields']['field_stp_location']['empty_zero'] = 0;
+$handler->display->display_options['fields']['field_stp_location']['hide_alter_empty'] = 1;
+$handler->display->display_options['fields']['field_stp_location']['field_api_classes'] = 0;
 /* Field: Profile: Transportation */
 $handler->display->display_options['fields']['field_stp_transit_req']['id'] = 'field_stp_transit_req';
 $handler->display->display_options['fields']['field_stp_transit_req']['table'] = 'field_data_field_stp_transit_req';
 $handler->display->display_options['fields']['field_stp_transit_req']['field'] = 'field_stp_transit_req';
 $handler->display->display_options['fields']['field_stp_transit_req']['relationship'] = 'field_ch_student_target_id';
-$handler->display->display_options['fields']['field_stp_transit_req']['label'] = '';
+$handler->display->display_options['fields']['field_stp_transit_req']['label'] = 'Trans';
 $handler->display->display_options['fields']['field_stp_transit_req']['exclude'] = TRUE;
 $handler->display->display_options['fields']['field_stp_transit_req']['alter']['alter_text'] = 0;
 $handler->display->display_options['fields']['field_stp_transit_req']['alter']['make_link'] = 0;
@@ -161,16 +243,46 @@ $handler->display->display_options['fields']['field_stp_transit_req']['alter']['
 $handler->display->display_options['fields']['field_stp_transit_req']['alter']['html'] = 0;
 $handler->display->display_options['fields']['field_stp_transit_req']['element_type'] = 'div';
 $handler->display->display_options['fields']['field_stp_transit_req']['element_class'] = 'all-choices-transit';
-$handler->display->display_options['fields']['field_stp_transit_req']['element_label_colon'] = FALSE;
+$handler->display->display_options['fields']['field_stp_transit_req']['element_label_colon'] = 1;
 $handler->display->display_options['fields']['field_stp_transit_req']['element_default_classes'] = 0;
 $handler->display->display_options['fields']['field_stp_transit_req']['hide_empty'] = 0;
 $handler->display->display_options['fields']['field_stp_transit_req']['empty_zero'] = 0;
 $handler->display->display_options['fields']['field_stp_transit_req']['hide_alter_empty'] = 1;
 $handler->display->display_options['fields']['field_stp_transit_req']['type'] = 'text_trimmed';
 $handler->display->display_options['fields']['field_stp_transit_req']['settings'] = array(
-  'trim_length' => '600',
+  'trim_length' => '150',
 );
 $handler->display->display_options['fields']['field_stp_transit_req']['field_api_classes'] = 0;
+/* Field: Profile: Career Goals */
+$handler->display->display_options['fields']['field_stp_career_goals']['id'] = 'field_stp_career_goals';
+$handler->display->display_options['fields']['field_stp_career_goals']['table'] = 'field_data_field_stp_career_goals';
+$handler->display->display_options['fields']['field_stp_career_goals']['field'] = 'field_stp_career_goals';
+$handler->display->display_options['fields']['field_stp_career_goals']['relationship'] = 'field_ch_student_target_id';
+$handler->display->display_options['fields']['field_stp_career_goals']['label'] = 'Inter';
+$handler->display->display_options['fields']['field_stp_career_goals']['exclude'] = TRUE;
+$handler->display->display_options['fields']['field_stp_career_goals']['alter']['alter_text'] = 0;
+$handler->display->display_options['fields']['field_stp_career_goals']['alter']['make_link'] = 0;
+$handler->display->display_options['fields']['field_stp_career_goals']['alter']['absolute'] = 0;
+$handler->display->display_options['fields']['field_stp_career_goals']['alter']['external'] = 0;
+$handler->display->display_options['fields']['field_stp_career_goals']['alter']['replace_spaces'] = 0;
+$handler->display->display_options['fields']['field_stp_career_goals']['alter']['trim_whitespace'] = 0;
+$handler->display->display_options['fields']['field_stp_career_goals']['alter']['nl2br'] = 0;
+$handler->display->display_options['fields']['field_stp_career_goals']['alter']['word_boundary'] = 1;
+$handler->display->display_options['fields']['field_stp_career_goals']['alter']['ellipsis'] = 1;
+$handler->display->display_options['fields']['field_stp_career_goals']['alter']['more_link'] = 0;
+$handler->display->display_options['fields']['field_stp_career_goals']['alter']['strip_tags'] = 0;
+$handler->display->display_options['fields']['field_stp_career_goals']['alter']['trim'] = 0;
+$handler->display->display_options['fields']['field_stp_career_goals']['alter']['html'] = 0;
+$handler->display->display_options['fields']['field_stp_career_goals']['element_label_colon'] = 1;
+$handler->display->display_options['fields']['field_stp_career_goals']['element_default_classes'] = 1;
+$handler->display->display_options['fields']['field_stp_career_goals']['hide_empty'] = 0;
+$handler->display->display_options['fields']['field_stp_career_goals']['empty_zero'] = 0;
+$handler->display->display_options['fields']['field_stp_career_goals']['hide_alter_empty'] = 1;
+$handler->display->display_options['fields']['field_stp_career_goals']['group_rows'] = 1;
+$handler->display->display_options['fields']['field_stp_career_goals']['delta_offset'] = '0';
+$handler->display->display_options['fields']['field_stp_career_goals']['delta_reversed'] = 0;
+$handler->display->display_options['fields']['field_stp_career_goals']['delta_first_last'] = 0;
+$handler->display->display_options['fields']['field_stp_career_goals']['field_api_classes'] = 0;
 /* Field: Content: Rank */
 $handler->display->display_options['fields']['field_ch_rank']['id'] = 'field_ch_rank';
 $handler->display->display_options['fields']['field_ch_rank']['table'] = 'field_data_field_ch_rank';
@@ -292,68 +404,32 @@ $handler->display->display_options['filters']['field_int_course_target_id']['rel
 $handler->display->display_options['filters']['field_int_course_target_id']['value'] = array(
   83 => '83',
 );
+$handler->display->display_options['filters']['field_int_course_target_id']['exposed'] = TRUE;
 $handler->display->display_options['filters']['field_int_course_target_id']['expose']['operator_id'] = 'field_int_course_target_id_op';
-$handler->display->display_options['filters']['field_int_course_target_id']['expose']['label'] = 'Course ';
+$handler->display->display_options['filters']['field_int_course_target_id']['expose']['label'] = 'Course';
 $handler->display->display_options['filters']['field_int_course_target_id']['expose']['operator'] = 'field_int_course_target_id_op';
 $handler->display->display_options['filters']['field_int_course_target_id']['expose']['identifier'] = 'field_int_course_target_id';
-$handler->display->display_options['filters']['field_int_course_target_id']['expose']['multiple'] = 1;
 $handler->display->display_options['filters']['field_int_course_target_id']['expose']['reduce'] = 0;
+/* Filter criterion: Content: Section (field_st_section) */
+$handler->display->display_options['filters']['field_st_section_value']['id'] = 'field_st_section_value';
+$handler->display->display_options['filters']['field_st_section_value']['table'] = 'field_data_field_st_section';
+$handler->display->display_options['filters']['field_st_section_value']['field'] = 'field_st_section_value';
+$handler->display->display_options['filters']['field_st_section_value']['relationship'] = 'field_stp_datatel_student_target_id';
+$handler->display->display_options['filters']['field_st_section_value']['exposed'] = TRUE;
+$handler->display->display_options['filters']['field_st_section_value']['expose']['operator_id'] = 'Student_Op';
+$handler->display->display_options['filters']['field_st_section_value']['expose']['label'] = 'Section';
+$handler->display->display_options['filters']['field_st_section_value']['expose']['use_operator'] = 1;
+$handler->display->display_options['filters']['field_st_section_value']['expose']['operator'] = 'field_st_section_value_op';
+$handler->display->display_options['filters']['field_st_section_value']['expose']['identifier'] = 'Student';
+$handler->display->display_options['filters']['field_st_section_value']['expose']['required'] = 0;
+$handler->display->display_options['filters']['field_st_section_value']['expose']['multiple'] = FALSE;
 
-/* Display: LIS 438 page */
-$handler = $view->new_display('page', 'LIS 438 page', 'page');
-$handler->display->display_options['path'] = 'all-choices-438';
+/* Display: All Students */
+$handler = $view->new_display('page', 'All Students', 'page');
+$handler->display->display_options['path'] = 'all-choices';
 $handler->display->display_options['menu']['type'] = 'normal';
-$handler->display->display_options['menu']['title'] = 'All LIS 438 Student Choices';
-$handler->display->display_options['menu']['description'] = 'Lists all  LIS 438 student requests for the current semester.';
-$handler->display->display_options['menu']['weight'] = '0';
-$handler->display->display_options['menu']['name'] = 'main-menu';
-$handler->display->display_options['menu']['context'] = 0;
-
-/* Display: LIS 502 page */
-$handler = $view->new_display('page', 'LIS 502 page', 'page_1');
-$handler->display->display_options['defaults']['title'] = FALSE;
-$handler->display->display_options['title'] = 'All LIS 502 Student Choices for the Current Semester';
-$handler->display->display_options['defaults']['filters'] = FALSE;
-/* Filter criterion: Content: Published */
-$handler->display->display_options['filters']['status']['id'] = 'status';
-$handler->display->display_options['filters']['status']['table'] = 'node';
-$handler->display->display_options['filters']['status']['field'] = 'status';
-$handler->display->display_options['filters']['status']['value'] = 1;
-$handler->display->display_options['filters']['status']['group'] = 1;
-$handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
-/* Filter criterion: Content: Type */
-$handler->display->display_options['filters']['type']['id'] = 'type';
-$handler->display->display_options['filters']['type']['table'] = 'node';
-$handler->display->display_options['filters']['type']['field'] = 'type';
-$handler->display->display_options['filters']['type']['value'] = array(
-  'internship_choice' => 'internship_choice',
-);
-/* Filter criterion: Taxonomy term: Active (field_tax_sem_active) */
-$handler->display->display_options['filters']['field_tax_sem_active_value']['id'] = 'field_tax_sem_active_value';
-$handler->display->display_options['filters']['field_tax_sem_active_value']['table'] = 'field_data_field_tax_sem_active';
-$handler->display->display_options['filters']['field_tax_sem_active_value']['field'] = 'field_tax_sem_active_value';
-$handler->display->display_options['filters']['field_tax_sem_active_value']['relationship'] = 'field_int_semester_target_id';
-$handler->display->display_options['filters']['field_tax_sem_active_value']['value'] = array(
-  1 => '1',
-);
-/* Filter criterion: Content: Course (field_int_course) */
-$handler->display->display_options['filters']['field_int_course_target_id']['id'] = 'field_int_course_target_id';
-$handler->display->display_options['filters']['field_int_course_target_id']['table'] = 'field_data_field_int_course';
-$handler->display->display_options['filters']['field_int_course_target_id']['field'] = 'field_int_course_target_id';
-$handler->display->display_options['filters']['field_int_course_target_id']['relationship'] = 'field_ch_internship_target_id';
-$handler->display->display_options['filters']['field_int_course_target_id']['value'] = array(
-  85 => '85',
-);
-$handler->display->display_options['filters']['field_int_course_target_id']['expose']['operator_id'] = 'field_int_course_target_id_op';
-$handler->display->display_options['filters']['field_int_course_target_id']['expose']['label'] = 'Course ';
-$handler->display->display_options['filters']['field_int_course_target_id']['expose']['operator'] = 'field_int_course_target_id_op';
-$handler->display->display_options['filters']['field_int_course_target_id']['expose']['identifier'] = 'field_int_course_target_id';
-$handler->display->display_options['filters']['field_int_course_target_id']['expose']['multiple'] = 1;
-$handler->display->display_options['filters']['field_int_course_target_id']['expose']['reduce'] = 0;
-$handler->display->display_options['path'] = 'all-choices-502';
-$handler->display->display_options['menu']['type'] = 'normal';
-$handler->display->display_options['menu']['title'] = 'All LIS 502 Student Choices';
-$handler->display->display_options['menu']['description'] = 'Lists all  LIS 502 student requests for the current semester.';
+$handler->display->display_options['menu']['title'] = 'All Student Choices';
+$handler->display->display_options['menu']['description'] = 'Lists all student requests for the current semester.';
 $handler->display->display_options['menu']['weight'] = '0';
 $handler->display->display_options['menu']['name'] = 'main-menu';
 $handler->display->display_options['menu']['context'] = 0;
