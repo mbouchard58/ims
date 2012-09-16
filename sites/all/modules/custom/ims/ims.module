@@ -2,29 +2,35 @@
 
 /*
  * Custom code for GSLIS IMS app
+ * Written by Maurice Bouchard
+ * March - September 2012
  */
 
-/*
- * ims_add_org_acl
- * add update permission to an organization for a particular user
+/**
+ * Add update permission to an organization for a particular user.
+ * 
+ * When a supervisor creates an account and verifies her organization, 
+ * upon clicking Save, she'll be given update access to her organization
+ * to allow edits, for example, to Parking, Hours, or Mass Transit.
+ * Much of the code was borrowed from the acl module, which must be
+ * enabled for this to work.
+ * 
  * @param string $uid
+ *   The supervisor's user id
  * @param array $form_state
- * @param string $nid = organization node id
- * @return nothing
+ * @param string $nid 
+ *   The supervisor's associated organization node id
  */
-function ims_add_org_acl($uid, &$form_state, $nid) {
-  $debug = FALSE;
-  
-  if ($debug) watchdog('ims_add_org_acl', "Adding ACL to @node for @user - @username", array('@node' => $nid, '@user' => $uid, '@username' => $form_state['values']['name']));
-  
-  $node = node_load($nid);
-  if (isset($node)) {
-    if ($debug) watchdog('ims_add_org_acl', "Loaded nid: @nid - @node", array('@nid' => $nid, '@node' => $node->title));
-    
+function ims_add_org_acl($uid, &$form_state, $nid) {  
+ // load the organization 
+ $node = node_load($nid);
+  if (isset($node)) {    
     //get the current settings 
     $settings = content_access_get_per_node_settings($node);
     if (!isset($settings)) {
       //if this node has not been used before then we have to establish default settings
+      //settings are based on the first two users, i.e., uid 2 and uid 3 being administrators
+      //we want to make sure administrators can do everything.
       $settings['view']        = array(2, 3);     
       $settings['view_own']    = array(2, 3);
       $settings['update']      = array(3);
@@ -42,7 +48,6 @@ function ims_add_org_acl($uid, &$form_state, $nid) {
     $acl_id = content_access_get_acl_id($node, $op);
     acl_node_add_acl($node->nid, $acl_id, (int) ($op == 'view'), (int) ($op == 'update'), (int) ($op == 'delete'), content_access_get_settings('priority', $node->type));
     
-    if ($debug) watchdog('ims_add_org_acl', "Got acl_id: @acl_id for @node", array('@acl_id' => $acl_id, '@node' => $node->title));
     //store it
     $form_state['values']['acl'][$op]['acl_id'] = $acl_id;
     $form_state['values']['acl'][$op]['deletions'][$uid] = 0;
@@ -50,12 +55,14 @@ function ims_add_org_acl($uid, &$form_state, $nid) {
     $form_state['values']['acl'][$op]['add'] = '';
     $form_state['values']['acl'][$op]['add_button'] = 'Add User';
     
-    //create a serialized user list for ims_acl_save
     $user_list[$uid] = $form_state['values']['name'];
     $form_state['values']['acl'][$op]['user_list'] = serialize($user_list);
     
     // following if statement is for robustness. The acl module MUST be enabled
     if (module_exists('acl')) {
+      //add the user/acl_id combination to the acl_user table
+      //this tells drupal that this user has update access to this particular
+      //organization, not all organizations.
       db_insert('acl_user')
        ->fields(array(
        'acl_id' => $acl_id,
@@ -72,41 +79,73 @@ function ims_add_org_acl($uid, &$form_state, $nid) {
     module_invoke_all('per_node', $settings);
   }
 }
-function ims_evaluation_node_submit(&$form, &$form_state) {
-  $node = node_load($form_state['values']['field_eval_student']['und'][0]['target_id']);
-  $form_state['values']['title'] .=  (string) $node->title;
-}
-function ims_final_evaluation_node_submit(&$form, &$form_state) {
-  $node = node_load($form_state['values']['field_fin_student']['und'][0]['target_id']);
-  $form_state['values']['title'] .=  (string) $node->title;
-}
-/*
- * quick way to display formID; will be commented most of the time 
- 
-function ims_form_alter(&$form, &$form_state, $formID) {
-  dpm($form);
-  dpm($form_state);
-}
-*/
 /**
-* @file
+ * Build a title for mid-semester evaluations.
+ * 
+ * Evaluations don't have a natural title and we don't ask the user to 
+ * supply one.  Here we're catenating the student's name to a partial title 
+ * created earlier.
+ * 
+ * @param $form
+ * @param $form_state
+ */
+function ims_evaluation_node_submit(&$form, &$form_state) {
+ //Get the node of content type Student which corresponds to this target_id
+  $node = node_load($form_state['values']['field_eval_student']['und'][0]['target_id']);
+  
+  //Catenate the student's full name on to the partial title built earlier.
+  $form_state['values']['title'] .=  (string) $node->title;
+}
+/**
+ * Build a title for final evaluations.
+ * 
+ * Evaluations don't have a natural title and we don't ask the user to 
+ * supply one.  Here we're catenating the student's name to a partial title 
+ * created earlier.
+ * 
+ * @param $form
+ * @param $form_state
+ */
+function ims_final_evaluation_node_submit(&$form, &$form_state) {
+ //Get the node of content type Student which corresponds to this target_id
+  $node = node_load($form_state['values']['field_fin_student']['und'][0]['target_id']);
+  
+  //Catenate the student's full name on to the partial title built earlier.
+  $form_state['values']['title'] .=  (string) $node->title;
+}
+
+/**
+* Implements hook_form_FORM_ID_alter()
+* 
 * Build the drop-down list of students from the internship node
 * Set the default supervisor name to the supervisor on the internship
 * 
 */
-/* Implements hook_form_FORM_ID_alter(). */
  function ims_form_evaluation_node_form_alter(&$form, &$form_state) {
+  //Assign the nid for the internship node associated with this evaluation
   $t_nid = $form['field_eval_internship']['und']['#default_value'][0];
+  
+  //Truncate the list of students. We're going to rebuild it our way.
   $form['field_eval_student']['und']['#options'] = array();
   
   if ($t_nid) {
+   //Load the internship node
     $t_int_node = node_load($t_nid);
+    //Make sure we have a valid internship and that it has been assigned.
     if (($t_int_node) && (!empty($t_int_node->field_int_assignment['und']))) {
-     // build the drop down for the students assigned to this internship
+     // Build the drop down for the students assigned to this internship
+     // It is possible to have more than one student assigned to an internship.
      foreach ($t_int_node->field_int_assignment['und'] as $t_assn) {
        if (!empty($t_assn['target_id'])) {
+        //Load the node of content type Student
          $node = node_load($t_assn['target_id']); 
+         //It should not be empty unless there has been data corruption.
          if (!empty($node)) {
+           //Add the student's full name in the drop down list.
+           //The student node title is the student's full name.
+           //In most cases there will only be one student's name in the drop down
+           //If there is more than one though, the supervisor must select which
+           //student the evaluation is for.
            $form['field_eval_student']['und']['#options'][$t_assn['target_id']] = $node->title;
          }
        }
@@ -126,24 +165,38 @@ function ims_form_alter(&$form, &$form_state, $formID) {
   
  }
 /**
-* @file
+* Implements hook_form_FORM_ID_alter().
+* 
 * Build the drop-down list of students from the internship node
 * Set the default supervisor name to the supervisor on the internship
 * 
 */
-/* Implements hook_form_FORM_ID_alter(). */
  function ims_form_final_evaluation_node_form_alter(&$form, &$form_state) {
+  //Assign the nid for the internship node associated with this evaluation
   $t_nid = $form['field_fin_internship']['und']['#default_value'][0];
+  
+  //Truncate the list of students. We're going to rebuild it our way.
   $form['field_fin_student']['und']['#options'] = array();
   
   if ($t_nid) {
+   //Load the internship node
     $t_int_node = node_load($t_nid);
+    
+    //Make sure we have a valid internship and that it has been assigned.
     if (($t_int_node) && (!empty($t_int_node->field_int_assignment['und']))) {
-     // build the drop down for the students assigned to this internship
+     //Build the drop down for the students assigned to this internship.
+     //It is possible to have more than one student assigned to an internship.
      foreach ($t_int_node->field_int_assignment['und'] as $t_assn) {
        if (!empty($t_assn['target_id'])) {
+         //Load a node of content type Student
          $node = node_load($t_assn['target_id']); 
+         //It should not be empty unless there has been data corruption.
          if (!empty($node)) {
+           //Add the student's full name in the drop down list.
+           //The student node title is the student's full name.
+           //In most cases there will only be one student's name in the drop down
+           //If there is more than one though, the supervisor must select which
+           //student the evaluation is for.
            $form['field_fin_student']['und']['#options'][$t_assn['target_id']] = $node->title;
          }
        }
@@ -162,54 +215,72 @@ function ims_form_alter(&$form, &$form_state, $formID) {
   }
   
  }
+
 /**
-* @file
+* Implements hook_form_FORM_ID_alter().
+* 
 * If logged in user is a student, then set defaults to some fields in the choice node.
 * Set the title and set the semester to the active semester
+* 
 */
-/* Implements hook_form_FORM_ID_alter(). */
  function ims_form_internship_choice_node_form_alter(&$form, &$form_state) {
   global $user;
   
+  //$course_match is used to avoid a deeply nested IF statement
   $course_match = 0;
   //clear course match from previous sessions
   variable_set('course_match', $course_match);
       
   $t_role = "student";
+  //add an extra, custom validation routine for internship choices
   $form['#validate'][] = 'ims_internship_choice_validation';
+  //add an extra, custom submit routine for internship choices
   $form['#submit'][] = 'ims_internship_choice_node_submit';
   
-  // only set default values for students and when she is creating a new choice (nid not set)
+  // only set default values if the logged in user is a student and when she is creating a new choice (nid not set)
   if (in_array($t_role, $user->roles) && $form['nid']['#value'] == NULL) {
     // get the student profile
     $profile_values = profile2_load_by_user($user->uid);
     
+    //better not be empty
     if (!empty($profile_values)) {
-
+      //the following assignment just makes the coding below a little clearer
       $std_profile = $profile_values['student_profile'];
 
-      // get the internship node
+      // get the internship node id
       $t_node = $form['#node'];
       $nid = $t_node->field_ch_internship['und'][0]['target_id'];
+      
+      //load the internship node
       $int_node = node_load($nid);
       if (isset($int_node)) {
+        //get the target_id for the course (e.g., LIS-438) associated with this internship
         $int_course = $int_node->field_int_course['und'][0]['target_id'];
+        //increment $course_match to indicate we found the internship
         $course_match++;
       }
       
-      // get the datatel student record
-      $nid = $std_profile->field_stp_datatel_student['und'][0]['target_id'];       
+      // get the datatel student record (i.e., content type student)
+      $nid = $std_profile->field_stp_datatel_student['und'][0]['target_id'];     
+      //load the student node  
       $node = node_load($nid);
       if (isset($node)) {
         $std_course = $node->field_st_course['und'][0]['target_id'];    
+        
+        //increment $course_match to indicate we found the student
         $course_match++;
       } 
     
+      //if we have a valid internship and a valid student and the courses are the same, then increment course_match one more time
+      //we want to make sure the student is eligible to choose this internship
       if (($course_match == 2) && ($int_course == $std_course)) $course_match++;
       
       //save course match for validation
       variable_set('course_match', $course_match);
       
+      //an internship choice does not have a natural title.
+      //since Drupal requires a title for its nodes, we build own from the internship title,
+      //the student's first name, last name and user name.
       $dTitle = (string) $int_node->title;
       $dTitle .= '-';
       $dTitle .= (string) $std_profile->field_stp_fname['und'][0]['value'];
@@ -219,25 +290,34 @@ function ims_form_alter(&$form, &$form_state, $formID) {
       $dTitle .= (string) $user->name;
       $dTitle .= ')';
       
-      $form['title']['#default_value'] = $dTitle;         
+      //put the default title in the form
+      $form['title']['#default_value'] = $dTitle;      
+      //put the logged in student's profile id in the form   
       $form['field_ch_student']['und']['#default_value'] = array($std_profile->pid);
     }
   }
 }
 /**
-* @file
+* Implements hook_form_FORM_ID_alter().
+*
 * If logged in user is a supervisor, then set defaults to some fields in the internship node.
 * Also if supervisor, set the semester to the active semester
+* 
+* If the logged in user is not a supervisor then we must have a program administrator or system administrator
+* For those higher powered users (who can assign a student to an internship) we rebuild the student list in the 
+* assignment drop-down into something more usable.
 */
-/* Implements hook_form_FORM_ID_alter(). */
+
  function ims_form_internship_node_form_alter(&$form, &$form_state) {
   global $user;
+  
   // default title size is 60, which is too wide for the left panel of a two panel form
+  // there is no way to change the size of the node title through the Drupal UI. It has to be done this way
   $form['title']['#size'] = 53;
   
   $t_role = "supervisor";
 
-  // only set default values for supervisors and when she is creating a new internship (nid not set)
+  // only set default values for a supervisor when she is creating a new internship (nid not set)
   if (in_array($t_role, $user->roles) && $form['nid']['#value'] == NULL) {
     // get the supervisor profile
     $profile_values = profile2_load_by_user($user->uid);
@@ -248,39 +328,58 @@ function ims_form_alter(&$form, &$form_state, $formID) {
       if (isset($tid)){
           $form['field_int_semester']['und']['#default_value'] = array($tid);   
       }
+      //the following assignment statement just makes the code following a little easier to read
       $super_profile = $profile_values['supervisor'];
       
-      $form['field_int_org_id']['und']['#default_value'] = array($super_profile->field_sup_org['und'][0]['target_id']);  
+      //the supervisor is associated with an Organization.  She can only add internships for her own organization
+      //therefore we won't give her a choice.  Stuff in the org_id from the supervisor profile to the internship org id
+      $form['field_int_org_id']['und']['#default_value'] = array($super_profile->field_sup_org['und'][0]['target_id']); 
+
+      //if the supervisor has added her name to her profile, assign it to this internship (it can be overridden)
       if (!empty($super_profile->field_sup_name)) {
         $form['field_int_sup_name']['und'][0]['value']['#default_value'] = $super_profile->field_sup_name['und'][0]['value'];
       }
+      
+      //if the supervisor has added her telephone to her profile, assign it to this internship (it can be overridden)
       if (!empty($super_profile->field_sup_phone)) {
         $form['field_int_sup_phone']['und'][0]['value']['#default_value'] = $super_profile->field_sup_phone['und'][0]['value'];
       }
+      
+      //if the supervisor has added her email to her profile, assign it to this internship (it can be overridden)
       if (!empty($super_profile->field_sup_email)) {
         $form['field_int_sup_email']['und'][0]['email']['#default_value'] = $super_profile->field_sup_email['und'][0]['email'];
       }
     }
   }
   else {
-    // build the student list for the assignment drop-down
+    //the logged in user is not a supervisor therefor we have some flavor of admin
+    //the default list of students to be assigned is too broad.  We can do better.
+    // Truncate the default list
     $form['field_int_assignment']['und']['#options'] = array();
+    
+    //Add the 'None' option to allow unassigning internships
     $form['field_int_assignment']['und']['#options']['_none'] = "- None -";
     
+    //grab the tid for the course to which this internship is assigned
     $course_tid = $form['field_int_course']['und']['#default_value'][0];
     
+    //Course is a required field on the internship. If it's null then there is a database integrity problem
     if ($course_tid != NULL) {
-      //the internship is for a course; find only those students who are registered for the course
+      //the internship is for a course; find only those students who are registered for the same course
       // execute the Students Course view. It will return all the students taking a particular course
-      // pass in the course TID as an
+      // pass in the course TID as an argument
       $view_name = "students_by_course";
       $display_id = "block";  
       $results = views_get_view_result($view_name, $display_id,  $course_tid);
       // $results should be a list students taking the course for which this internship is assigned
       foreach ($results as $result) {
         
+        // further refine the list by skipping students assigned to other internships
+        // the resulting list should be unassigned students enrolled in the course for which this internship is encoded plus
+        // students previously assigned to this internship
         if ((empty($result->field_field_st_assignment)) || 
-            ($result->field_field_st_assignment[0]['raw']['target_id'] == $form['nid']['#value'])) {       
+            ($result->field_field_st_assignment[0]['raw']['target_id'] == $form['nid']['#value'])) {  
+             // the node_title for each row in the view is the student's full name.     
           $form['field_int_assignment']['und']['#options'][$result->nid] = $result->node_title;
 
         }  
@@ -294,35 +393,26 @@ function ims_form_alter(&$form, &$form_state, $formID) {
   }
 }
 /**
-* @file
-* Change the input size of the title to 45.
 * Implements hook_form_FORM_ID_alter().
+* Change the input size of the title to 45.
 **/
  function ims_form_organization_node_form_alter(&$form, &$form_state) {
+   //there is no way to override the length of the node's title through the Drupal UI.
     $form['title']['#size'] = 45;
  }
- /**
-* @file ims_form_profile2_edit_supervisor
-* @param $form
-* @param $form_state
+/**
+* Implements hook_form_profile2_edit_PROFILE_TYPE_form_alter
 * For supervisors: truncate the list of orgs available to choose from; allow them to change just once
 * For admins: add submit function to add edit permission on the org node for this supervisor
 * For all: modify the drop down display to include the repository
 * 
-* Implements hook_form_profile2_edit_PROFILE_TYPE_form_alter
-**/
- /**
-* @file
-* The assignment cannot be changed on the student content type
-*
-* Implements hook_form_FORM_ID_alter
 **/
 
  function ims_form_profile2_edit_supervisor_form_alter(&$form, &$form_state) {
   global $user;
 
   // supervisors cannot change their org, therefore we'll truncate the list
-  // administrators and archive admins can change a supervisor to any org.
+  // administrators and program admins can change a supervisor to any org.
   if (in_array("supervisor", $user->roles)) {
     // truncate the dropdown.
     $form['profile_supervisor']['field_sup_org']['und']['#options'] = array();
@@ -339,15 +429,19 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     
       // testing $node as a precaution; should *always* be populated
       if (isset($node)) {
+        // grab the first 45 characters of the organzation name
         $org_title = trim(substr($node->title, 0, 45));
+        // add the repository name if present; this differentiates all the Harvard's for example
         if (!empty($node->field_org_repository)) {
           $org_title .= " - " . trim(substr($node->field_org_repository['und'][0]['value'], 0, 30));
         }
 
+       //this supervisor will see only one name in the drop down, her own.
        $form['profile_supervisor']['field_sup_org']['und']['#options'][$nid] = $org_title;
       }
     }
-    else {     
+    else {   
+     // this is the first time the supervisor is viewing her new profile (otherwise multi_org would be 0)  
      // $multi_org is 1 if there was more than one choice for org when the supervisor registered
      // otherwise it's set to the org nid; we don't use it as the nid but it saves us from having to find the org again...
      // since we found an exact match during the registration process 
@@ -359,7 +453,9 @@ function ims_form_alter(&$form, &$form_state, $formID) {
         $node = node_load($nid);    
         // testing $node as a precaution; should *always* be populated
         if (isset($node)) {
+         // grab the first 45 characters of the organzation name
           $org_title = trim(substr($node->title, 0, 45));
+          // add the repository name if present; this differentiates all the Harvard's for example
           if (!empty($node->field_org_repository)) {
             $org_title .= " - " . trim(substr($node->field_org_repository['und'][0]['value'], 0, 30));
           }
@@ -378,11 +474,14 @@ function ims_form_alter(&$form, &$form_state, $formID) {
         $field_name = "field_org_email";
         $value = $domain;
       
+        // find all the orgs with email domain (i.e., field_org_email) equal to $domain
         $oids = tedbow_utils_find_entities_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'value', $access = '1');
         if (!empty($oids)) {
           foreach($oids as $nid) {
             $node = node_load($nid);
+             // grab the first 45 characters of the organzation name
             $org_title = trim(substr($node->title, 0, 45));
+            // add the repository name if present; this differentiates all the Harvard's for example
             if (!empty($node->field_org_repository)) {
               $org_title .= " - " . trim(substr($node->field_org_repository['und'][0]['value'], 0, 30));
             }
@@ -403,7 +502,9 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     }
   }
   else {
-   // rebuild the organization drop down to include the repository
+   // admins can assign any org to any supervisor
+   // rebuild the organization drop down to include the repository name
+   // this differentiates among all the Harvard's for example
    $options = $form['profile_supervisor']['field_sup_org']['und']['#options'];
    foreach ($options as $nid => $title) {
      if ($nid == "_none") {
@@ -428,9 +529,10 @@ function ims_form_alter(&$form, &$form_state, $formID) {
   } 
  } 
 /**
-* @file
-* Truncate and redisplay the single assignment.  We don't want the assignment changed from this end.
 * Implements hook_form_FORM_ID_alter().
+* 
+* Truncate and redisplay the single assignment.  We don't want the assignment changed from this end.
+* 
 **/
  function ims_form_student_node_form_alter(&$form, &$form_state) {
   // truncate the dropdown.
@@ -445,14 +547,19 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     // testing $node as a precaution; should *always* be populated
     if (isset($node)) {
       $title = "";
+      
+      //assign the internships title to $ref_title
       $ref_title = $node->title;
       // get org title
       $org_nid = $node->field_int_org_id['und'][0]['target_id'];
       $node = node_load($org_nid);
+      //$node must be set or there are database integrity trouble
       if (isset($node)) {
         $title = $node->title . " - ";
       }
       $title .= $ref_title;
+      
+      //the assignment drop down will show the org name - internship title
       $form['field_st_assignment']['und']['#options'][$nid] = $title;
       
     }
@@ -464,13 +571,18 @@ function ims_form_alter(&$form, &$form_state, $formID) {
  } 
 
 /**
-* @file
+* Implements hook_form_FORM_ID_alter()
+* 
+* This function is called when someone attempts to register
+* We don't want just anyone registering
+* Students and supervisors can register themselves
+* Everyone else, like faculty, for example, has to be added by the Drupal administrator
+* Also, administrators can add student accounts and supervisor accounts (additional validation and submit functionality is ignored)
+* 
 * Specifies rules for restricting student user registration based on email addr found in datatel student table
 * If not a simmons.edu domain, assume supervisor.  Check domain in Org table.
 */
-/**
-* Implements hook_form_FORM_ID_alter().
-**/
+
  function ims_form_user_register_form_alter(&$form, &$form_state) {
   global $user;
 
@@ -486,8 +598,9 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     $form['#submit'][] = 'ims_user_submit';
   } 
  }
-  /*
+  /**
   * Return the active semester
+  * @return $tid the taxonomy id of the active semester
   */
  function ims_get_active_semester() {
    $tid = NULL;
@@ -500,17 +613,20 @@ function ims_form_alter(&$form, &$form_state, $formID) {
    $terms = taxonomy_get_tree($vid, $parent = 0, $max_depth = NULL, $load_entities = TRUE);
       
    foreach ($terms as $term) {
-     // find the active semester
+     // find the active semester; there is only 1
      if ($term->field_tax_sem_active['und'][0]['value'] == '1') {
        $tid = $term->tid;
+       // found it.  no need to keep looking.
        break;
      }
    }
    return $tid;
  }
-/*
+/**
  * Extract the domain from an email address
- * ims_get_domain
+ * 
+ * Input an email address and return the portion of the email address that is the domain
+ * 
  * @param string $email
  * @return string $domain
  */
@@ -522,13 +638,17 @@ function ims_form_alter(&$form, &$form_state, $formID) {
   
   return $domain;
  }
+ /**
+  * Additional submit function when an internship choice is added or edited
+  * We want to adjust the 'Chosen' field on the internship node.
+  */
  function ims_internship_choice_node_submit(&$form, &$form_state) { 
   // load internship node, increment chosen and save it
   // need to test for new choice, deleted choice (decrement chosen) or changed choice (inc and dec)
   $t_internship_id = $form_state['values']['field_ch_internship']['und'][0]['target_id'];
   
   if ($form['nid']['#value'] == NULL) {
-    //new choice. get chosen and increment   
+    //new choice. get internship then increment Chosen
     $t_int_node = node_load($t_internship_id);
     if (isset($t_int_node)) {
       $t_chosen = $t_int_node->field_int_chosen['und'][0]['value'];
@@ -544,11 +664,11 @@ function ims_form_alter(&$form, &$form_state, $formID) {
   $view_name = "student_choices";
   $display_id = "block";  
   $results = views_get_view_result($view_name, $display_id);
-  //grab the rank the student just entered
+  //grab the rank for the choice the student just entered
   $t_rank = $form_state['values']['field_ch_rank']['und'][0]['value'];
   foreach ($results as $result) {
     // if the student is changing the current rank to a rank she has chosen before but for a different internship
-    // then give that internship the old rank from this internship
+    // then give that internship the old rank from this internship, that is, swap ranks between the internships
     if (($t_internship_id != $result->node_field_data_field_ch_internship_nid) && 
        ($t_rank == $result->field_field_ch_rank[0]['raw']['value'])) {
         $t_ch_nid = $result->field_ch_student_profile_nid;
@@ -559,7 +679,14 @@ function ims_form_alter(&$form, &$form_state, $formID) {
     }
   }
  }
-
+/**
+ * Additional validation logic for internship choices
+ * 
+ * Students may not choose more than three internships
+ * Students may not choose the same internship twice
+ * Students cannot use the same rank more than once
+ * Students can only choose internships coded to the same course in which they're enrolled
+ */
  function ims_internship_choice_validation(&$form, &$form_state) { 
   //grab the rank the student had just entered
   $t_rank = $form_state['values']['field_ch_rank']['und'][0]['value'];
@@ -579,6 +706,9 @@ function ims_form_alter(&$form, &$form_state, $formID) {
      form_set_error('student choice', t('You have already made three choices.'));
     }
     
+    //see the function internship_choice_node_form_alter to see how course_match is calculated
+    //generally students will not see internships for other courses however clever students can manipulate the url to
+    //get at internships they won't see in the internship view
     $course_match = variable_get('course_match');
     if ($course_match < 3) {
       form_set_error('student choice', t('You may only choose internships for a course in which you are enrolled.'));
@@ -597,8 +727,16 @@ function ims_form_alter(&$form, &$form_state, $formID) {
       }
     }
   }
- 
  }
+ /**
+  * Additional submit logic for adding or editing internships
+  * 
+  * Update the student content type record with assignment info as assignments are made or changed
+  * on an internship
+  * 
+  * @param &$form
+  * @param &$form_state
+  */
  function ims_internship_node_submit(&$form, &$form_state) {
    //unassign previously assigned students and then assign new ones
    //$t_pre holds the list of students previously assigned; it may be empty
@@ -609,6 +747,7 @@ function ims_form_alter(&$form, &$form_state, $formID) {
    $t_new = $form_state['values']['field_int_assignment']['und'];
    
    if (!(empty($t_pre))) {
+     //unassign the formerly assigned students (an internship with multiple positions can have multiple assignments)
      ims_unassign_students($t_pre);
    }
     
@@ -621,12 +760,20 @@ function ims_form_alter(&$form, &$form_state, $formID) {
         $node = node_load($nid);
         //make sure we have a valid student object
         if (!empty($node)) {
+          //add the node id for this internship to all students assigned
           $node->field_st_assignment['und'][0]['target_id'] = $form_state['values']['nid'];
           node_save($node);
         }
       }     
     }
  }
+ /**
+  * Additional internship node validation logic
+  * An admin may not assign more students than the number of positions
+  * 
+  * @param &$form
+  * @param &$form_state
+  */
  function ims_internship_node_validation(&$form, &$form_state) {
   $t_count = count($form_state['values']['field_int_assignment']['und']);
   if ($t_count > (int) $form_state['values']['field_int_positions']['und'][0]['value']) {
@@ -634,16 +781,17 @@ function ims_form_alter(&$form, &$form_state, $formID) {
   }
  }
 /**
-* @file
+* Implements hook_node_delete()
+* 
 * Extra deletion logic after deleting a node.
 */
-/* Implements hook_node_delete(). */
+
  function ims_node_delete($node) {
   
   switch ($node->type) {
     case ('internship_choice'):
       //we're deleting an internship choice, so we've got to load the internship and decrement chosen
-     $t_internship_id = $node->field_ch_internship['und'][0]['target_id'];
+      $t_internship_id = $node->field_ch_internship['und'][0]['target_id'];
       $t_int_node = node_load($t_internship_id);
       //do we have a valid node?
       if (isset($t_int_node)) {
@@ -669,18 +817,23 @@ function ims_form_alter(&$form, &$form_state, $formID) {
       break;
   }
  }
- /*
+ /**
   * Extra submit function for profile2 supervisor
-  * @function ims_super_profile2_submit
-  * this will be called one time for supervisors allowing them to verify their org
-  * it will be called every time an admin edits and saves a supervisor's profile
+  *
+  * This will be called one time for supervisors allowing them to verify their org
+  * It will be called every time an admin edits and saves a supervisor's profile
   * This function gives the supervisor edit permission on her affiliated organization
-  * @param $form
-  * @param $form_state
+  * 
+  * @param &$form
+  * @param &$form_state
   */
 function ims_super_profile2_submit(&$form, &$form_state) {
   
   $super_profile = $form_state['profile2'];
+  
+  // get the user information for the user associated with this supervisor profile
+  // if the supervisor is editing her own profile then the uid is the same as the logged in user
+  // however, the admin can edit a supervisor's profile
   $uid = $super_profile->uid;
   $user = user_load($uid);
   
@@ -690,6 +843,7 @@ function ims_super_profile2_submit(&$form, &$form_state) {
     //get the old org nid
     $nid = $super_profile->field_sup_org['und'][0]['target_id'];
    
+    // this logic pre-supposes the ACL contrib module is installed
     // get the acl_id associated with update access to this nid
     $acl_id = db_query("SELECT acl_id FROM {acl_node} WHERE nid = :nid AND grant_update = 1", array(
     'nid' => $nid,
@@ -702,7 +856,7 @@ function ims_super_profile2_submit(&$form, &$form_state) {
     }
   }
  
-  // now add update permission on the new node
+  // now add update permission on the new organization node for the user associated with this profile
   $nid = $form_state['values']['profile_supervisor']['field_sup_org']['und'][0]['target_id'];
   
   // the acl routines need the username in $form_state 
@@ -712,17 +866,21 @@ function ims_super_profile2_submit(&$form, &$form_state) {
   ims_add_org_acl($uid, $form_state, $nid); 
 }
 /**
-* @file
+*
 * unassign previously assigned students
+* 
+* @param $assignments -- a list of students assigned to an internship
 */
  function ims_unassign_students($assignments) {
    foreach ($assignments as $t_assn) {
      $nid = $t_assn['target_id'];
       
      if (isset($nid)) {
+       //load the student node
        $node = node_load($nid);
        //make sure we have a valid student  object
        if (!empty($node)) {
+          //truncate the previous assignment
           $node->field_st_assignment = array();
           node_save($node);
        }
@@ -731,6 +889,9 @@ function ims_super_profile2_submit(&$form, &$form_state) {
  }
 /**
  * Implements hook_user_presave().
+ * 
+ * Additional logic for assigning a role, either student or supervisor
+ * Used when a user creates an account
  */
 function ims_user_presave(&$edit, $account, $category) {
   // only assign role of student or supervisor on new accounts
@@ -743,6 +904,7 @@ function ims_user_presave(&$edit, $account, $category) {
       $edit['roles'] = array();
     }
 
+    //ims_assigned_role is set in user_register_validation, it will be student or supervisor
     $t_role = array_filter(variable_get('ims_assigned_role', array()));
     if (!empty($t_role)) {
       $roles_to_add = array_intersect($user_roles, $t_role); 
@@ -752,29 +914,44 @@ function ims_user_presave(&$edit, $account, $category) {
     }
   }
 }
-
+/**
+ * Additional user registration validation logic
+ * 
+ * If the new user's email address ends in simmons.edu assume we have a student
+ * If the new user's email address ends in something else, assume a supervisor
+ * 
+ * @todo check for the current, active semester when checking for email addr among student nodes
+ * @param &$form
+ * @param &$form_state
+ */
 function ims_user_register_validation(&$form, &$form_state) {
 
-  // look into making the literal a constant and have all constants in a .inc 
+  //check for simmons users first
   $schoolDomains = 'simmons.edu';
 
   //clear out assigned role for next user
   variable_set('ims_assigned_role', array());
   
+  //the user has entered her email address
   $email = $form_state['values']['mail'];
+  
+  //grab the domain from the email addr
   $domain = ims_get_domain($email);
 
   $entity_type = "node";
 
   if (($domain == $schoolDomains) ) {
-    // we've got a Simmons student (Simmons supervisors need not register)
+    // we've got a Simmons student (Simmons supervisors cannont register themselves, they have to be added by an admin)
    
     $bundle = "student";
     $field_name = "field_st_email";  // this is not a field of type email as it is with supervisors, hence $column is 'value'
     $value = $email;
         
+    //look through all the students to find one with a matching email address
+    //student nodes come from the datatel feed
     $oid = tedbow_utils_find_entity_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'value', $access = '1'); 
     if (!empty($oid)) {      
+      //found a match
       //set ims_assigned_role to student; used by ims_user_presave
       //also store object ID of Student; used by ims_user_submit
       variable_set('ims_assigned_role', array('student', $oid));
@@ -784,10 +961,10 @@ function ims_user_register_validation(&$form, &$form_state) {
     }
   }
   else {
-   // we've got a potential supervisor, check org table for email 1, email 2, or domain match
-   // if none match, then the user may not register
+    // we've got a potential supervisor, check org table for email 1, email 2, or domain match
+    // if none match, then the user may not register
     $bundle = "organization";
-    $field_name = "field_org_email_1";
+    $field_name = "field_org_email_1"; //data type is email; hence $column = 'email' below
     $value = $email;
     
     // look for a match on primary email address first
@@ -810,11 +987,10 @@ function ims_user_register_validation(&$form, &$form_state) {
         variable_set('ims_multi_org', $oid);
       }
       else {
-         $field_name = "field_org_email";
+         $field_name = "field_org_email"; //the field name is a little misleading, this is the org's email domain
          $value = $domain;
          // third , check for a match on the email domain
          // returns org id (nid of node of content type organization)
-         // if there is more than one org with the same email domain (e.g., harvard.edu), only the first will be returned
          $oids = tedbow_utils_find_entities_with_field_value($entity_type, $bundle, $field_name, $value, $column = 'value', $access = '1');
          if (!empty($oids)) {
            //set ims_assigned_role to supervisor; used by ims_user_presave
@@ -823,7 +999,7 @@ function ims_user_register_validation(&$form, &$form_state) {
            
            //if multiple OIDs were returned, we need to set the multi_org flag in the supervisor profile
            //when the supervisor logs in she can refine the org to the correct one.
-           
+           //see ims_form_profile2_edit_supervisor_form_alter          
            if (count($oids) == 1) {
              $mult_org = $oids[0];
            }
@@ -841,6 +1017,12 @@ function ims_user_register_validation(&$form, &$form_state) {
 }
 /**
  * additional submit function for adding a profile2 profile
+ * 
+ * For new student accounts, create a student profile
+ * For new supervisor accounts, create a supervisor profile
+ * 
+ * @param &$form
+ * @param &$form_state
  */
 function ims_user_submit($form, &$form_state) {
   $t_role = array();
@@ -850,13 +1032,16 @@ function ims_user_submit($form, &$form_state) {
   $multi_org = variable_get('ims_multi_org', 1);
   
   if ($t_role[0] == 'supervisor') {
+    //get the user id
     $uid = $form_state['values']['uid'];
     // create profile object
     $profile = profile_create(array('user' => $uid, 'type' => 'supervisor'));
 
-    // assign organization ID, store in $t_role[1] at validation time
+    // assign organization ID, stored in $t_role[1] at validation time
     $profile->field_sup_org['und'][0]['target_id'] = $t_role[1]; //stored by variable_set in validation
-    // assign multi_org flag
+    // assign multi_org flag, this is either the org_id if there was only match on email address
+    // otherwise multi_org == 1 which means there were multiple orgs that could be associated with this supervisor
+    // the supervisor will have a chance to choose the correct one from the list after she logs in the first time.
     $profile->field_sup_multi_org['und'][0]['value'] = $multi_org;
     // assign email address
     $profile->field_sup_email['und'][0]['email'] = (string) $form_state['values']['mail']; 
@@ -866,11 +1051,13 @@ function ims_user_submit($form, &$form_state) {
     $uid = $form_state['values']['uid'];
   }
   elseif ($t_role[0] == 'student') {
+   //$t_role[1] contains the node id for the student content type record associated with this user
    $oid = $t_role[1]; // stored in ims_user_register_validation
+   //load the student node
    $node = node_load($oid);
    if (isset($node)) {
      $uid = $form_state['values']['uid'];
-     
+     // we want the new student account holder to 'own' the datatel student record
      // change datatel student 'record' owner (author) to the new student
      $node->uid = $uid;
      node_save($node);
@@ -888,11 +1075,14 @@ function ims_user_submit($form, &$form_state) {
      foreach ($terms as $term) {
        $sections = $term->field_cmp_section['und'];
        foreach ($sections as $section) {
+        //the student content type record has the section for which this student is enrolled
          if ($node->field_st_section['und'][0]['value'] == $section['value']) {
+           //we found the 'campus' associated with this section
            $campus_tid = $term->tid;
            break;
          }
        }
+       //if we found the campus, no reason to keep looking
        if ($campus_tid) break;
      }
      // create profile object
@@ -915,12 +1105,15 @@ function ims_user_submit($form, &$form_state) {
 }
 /**
  * implements hook_views_api().
+ * 
+ * This function is necessary for having views stored in code
  */
 function ims_views_api() {
   return array('api' => '3.0');
 }
 /**
  * Implements hook_views_default_views().
+ * This function is necessary for having views stored in code
  */
 function ims_views_default_views() {
   $path = './' . drupal_get_path('module', 'ims') . '/views/*.inc';
@@ -932,6 +1125,9 @@ function ims_views_default_views() {
 }
 /**
  * Implements hook_views_query_alter().
+ * 
+ * Used to modify views filter logic when you can't do it through the UI
+ * 
  */
 function ims_views_query_alter(&$view, &$query) {
 
@@ -940,9 +1136,12 @@ function ims_views_query_alter(&$view, &$query) {
   switch ($view->name) {
    case 'internships':
      $t_role = "student";
-
+     // students have their own page in the internship view
      // only alter the query for students
      if (in_array($t_role, $user->roles)) {
+      // we need the course in which this student is enrolled
+      // it's stored on the student content type record but
+      // we need to go through the student profile to get to it.
       // get the student profile
       $profile_values = profile2_load_by_user($user->uid);
     
@@ -952,6 +1151,7 @@ function ims_views_query_alter(&$view, &$query) {
         $nid = $student_profile->field_stp_datatel_student['und'][0]['target_id'];
         $node = node_load($nid);
         if (isset($node)) {
+          // this filter is hard coded to LIS 438 in the view UI but this line overrides that
           // set the course condition in the view to the course in which the student is enrolled
           $query->where[1]['conditions'][2]['value'][0] = $node->field_st_course['und'][0]['target_id'];    
         } 
